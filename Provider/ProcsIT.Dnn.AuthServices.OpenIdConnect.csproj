@@ -54,6 +54,7 @@
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="System.Data" />
     <Reference Include="System.IdentityModel" />
     <Reference Include="System.IdentityModel.Tokens.Jwt, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.5.3.0\lib\net45\System.IdentityModel.Tokens.Jwt.dll</HintPath>
@@ -76,6 +77,13 @@
     </Compile>
     <Compile Include="QueryParameter.cs" />
     <Compile Include="QueryParameterComparer.cs" />
+    <Compile Include="Settings.ascx.cs">
+      <DependentUpon>Settings.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Settings.ascx.designer.cs">
+      <DependentUpon>Settings.ascx.cs</DependentUpon>
+    </Compile>
     <Compile Include="UserData.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -85,6 +93,9 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Settings.ascx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

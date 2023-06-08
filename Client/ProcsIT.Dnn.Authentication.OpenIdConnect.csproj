@@ -32,6 +32,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AWSSDK.CognitoIdentityProvider, Version=3.3.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604, processorArchitecture=MSIL">
+      <HintPath>..\packages\AWSSDK.CognitoIdentityProvider.3.7.101.142\lib\net45\AWSSDK.CognitoIdentityProvider.dll</HintPath>
+    </Reference>
+    <Reference Include="AWSSDK.Core, Version=3.3.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604, processorArchitecture=MSIL">
+      <HintPath>..\packages\AWSSDK.Core.3.7.107.3\lib\net45\AWSSDK.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="AWSSDK.S3">
+      <HintPath>..\..\..\bin\AWSSDK.S3.dll</HintPath>
+    </Reference>
     <Reference Include="DotNetNuke, Version=9.2.1.533, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DotNetNuke.Core.9.2.1.533\lib\net40\DotNetNuke.dll</HintPath>
     </Reference>
@@ -44,6 +53,13 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Login.ascx.cs">
+      <DependentUpon>Login.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Login.ascx.designer.cs">
+      <DependentUpon>Login.ascx.cs</DependentUpon>
+    </Compile>
     <Compile Include="Login.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
@@ -65,6 +81,15 @@
       <Project>{3185e0ca-0c71-42f5-bb07-5a24be10aac5}</Project>
       <Name>ProcsIT.Dnn.AuthServices.OpenIdConnect</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Login.ascx" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\packages\AWSSDK.CognitoIdentityProvider.3.7.101.142\analyzers\dotnet\cs\AWSSDK.CognitoIdentityProvider.CodeAnalysis.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -66,6 +66,9 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         [DataMember(Name = "updated_at")]
         public virtual string UpdatedAt { get; set; }
 
+        [DataMember(Name = "username")]
+        public virtual string Username { get; set; }
+
 
         // TODO:
 

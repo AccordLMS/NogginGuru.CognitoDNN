@@ -1,4 +1,7 @@
-﻿using DotNetNuke.Common;
+﻿using DNN.OpenId.Cognito;
+using DotNetNuke.Common;
+using DotNetNuke.Common.Utilities;
+using DotNetNuke.Data;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Users;
 using DotNetNuke.Instrumentation;
@@ -6,12 +9,14 @@ using DotNetNuke.Security.Membership;
 using DotNetNuke.Services.Authentication;
 using DotNetNuke.Services.Authentication.Oidc;
 using DotNetNuke.Services.Localization;
+using DotNetNuke.UI.UserControls;
 using IdentityModel.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.IdentityModel.Selectors;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -60,8 +65,8 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
             _authMode = mode;
             _service = service;
 
-            _apiKey = OidcConfigBase.GetConfig(_service, portalId).APIKey;
-            _apiSecret = OidcConfigBase.GetConfig(_service, portalId).APISecret;
+            _apiKey = "6q238e664duf5h3uv3739i7b7l"; /*OidcConfigBase.GetConfig(_service, portalId).APIKey;*/
+            _apiSecret = "gfdfs3sif07263gi2d90ebidsph2194suu93io5l0i4ovie123p";/*OidcConfigBase.GetConfig(_service, portalId).APISecret;*/
 
             _callbackUri = _authMode == AuthMode.Login
                                     ? Globals.LoginURL(string.Empty, false)
@@ -129,10 +134,10 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
             if (userId == null)
                 return AuthorisationResult.Denied;
 
-            var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-            var objUserInfo = UserController.ValidateUser(settings.PortalId, userId, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
-            if (objUserInfo != null && (objUserInfo.IsDeleted || loginStatus != UserLoginStatus.LOGIN_SUCCESS))
-                return AuthorisationResult.Denied;
+            //var loginStatus = UserLoginStatus.LOGIN_FAILURE;
+            //var objUserInfo = UserController.ValidateUser(settings.PortalId, userId, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
+            //if (objUserInfo != null && (objUserInfo.IsDeleted || loginStatus != UserLoginStatus.LOGIN_SUCCESS))
+            //    return AuthorisationResult.Denied;
 
 
             AuthTokenExpiry = GetExpiry(Convert.ToInt32(TokenResponse.ExpiresIn));
@@ -251,65 +256,127 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
 
         public virtual void AuthenticateUser(UserData user, PortalSettings settings, string IPAddress, Action<NameValueCollection> addCustomProperties, Action<UserAuthenticatedEventArgs> onAuthenticated)
         {
-            var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-
-            var objUserInfo = UserController.ValidateUser(settings.PortalId, user.Id, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
-
-
-            // Raise UserAuthenticated Event
-            var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, user.Id, loginStatus, _service)
+            if (user.Username != null && user.Email != null)
             {
-                AutoRegister = true
-            };
+                if (user.FirstName == null || user.FirstName == "")
+                {
+                    user.FirstName = user.Username;  
+                }
+                if (user.LastName == null || user.LastName == "")
+                {
+                    user.LastName = user.Username;
+                }
 
-            // TODO:
-            var profileProperties = new NameValueCollection();
 
-            if (string.IsNullOrEmpty(objUserInfo?.FirstName) && !string.IsNullOrEmpty(user.FirstName))
-                profileProperties.Add("FirstName", user.FirstName);
+                UserInfo objUserInfo = UserController.GetUserByName(settings.PortalId, user.Username);
+                //var objUserInfo = UserController.ValidateUser(settings.PortalId, user.Username, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
 
-            if (string.IsNullOrEmpty(objUserInfo?.LastName) && !string.IsNullOrEmpty(user.LastName))
-                profileProperties.Add("LastName", user.LastName);
+                if (objUserInfo == null)
+                {
+                    //We create the user
+                    objUserInfo = new UserInfo();
+                    objUserInfo.FirstName = user.FirstName;
+                    objUserInfo.LastName = user.LastName;
+                    objUserInfo.Email = user.Email;
+                    objUserInfo.Username = user.Username;
+                    objUserInfo.DisplayName = user.DisplayName;
+                    objUserInfo.Membership.Password = UserController.GeneratePassword();
+                    objUserInfo.PortalID = settings.PortalId;
+                    objUserInfo.IsSuperUser = false;
+                    var usrCreateStatus = new UserCreateStatus();
 
-            if (string.IsNullOrEmpty(objUserInfo?.Email) && !string.IsNullOrEmpty(user.Email))
-                profileProperties.Add("Email", user.Email);
+                    usrCreateStatus = UserController.CreateUser(ref objUserInfo);
 
-            if (string.IsNullOrEmpty(objUserInfo?.DisplayName) && !string.IsNullOrEmpty(user.DisplayName))
-                profileProperties.Add("DisplayName", user.DisplayName);
 
-            if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("Website")) && !string.IsNullOrEmpty(user.Website))
-                profileProperties.Add("Website", user.Website);
-
-            if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("PreferredLocale")) && !string.IsNullOrEmpty(user.Locale))
-            {
-                if (LocaleController.IsValidCultureName(user.Locale.Replace('_', '-')))
-                    profileProperties.Add("PreferredLocale", user.Locale.Replace('_', '-'));
+                    if (usrCreateStatus != UserCreateStatus.Success)
+                    {
+                        //LOG ERROR
+                    }
+                }
                 else
-                    profileProperties.Add("PreferredLocale", settings.CultureCode);
+                {
+                    //User already exists
+                    if (objUserInfo.Membership.LockedOut)
+                    {
+                        UserController.UnLockUser(objUserInfo);
+                    }
+                    objUserInfo.Membership.Approved = true;
+
+                }
+
+                UserValidStatus validStatus = UserController.ValidateUser(objUserInfo, settings.PortalId, true);
+                UserLoginStatus loginStatus = validStatus == UserValidStatus.VALID ? UserLoginStatus.LOGIN_SUCCESS : UserLoginStatus.LOGIN_FAILURE;
+                if (loginStatus == UserLoginStatus.LOGIN_SUCCESS)
+                {
+                    //SetLoginDate(user.Username);
+                    //Raise UserAuthenticated Event
+                    var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, "Oidc")
+                    {
+                        Authenticated = true,
+                        Message = "User authorized",
+                        RememberMe = false
+                    };
+
+                    UserController.UserLogin(settings.PortalId, objUserInfo, settings.PortalName, "Oidc", false);
+
+
+
+                    // Raise UserAuthenticated Event
+                    //    var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, user.Id, loginStatus, _service)
+                    //{
+                    //    AutoRegister = true
+                    //};
+
+                    // TODO:
+                    //var profileProperties = new NameValueCollection();
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.FirstName) && !string.IsNullOrEmpty(user.FirstName))
+                    //    profileProperties.Add("FirstName", user.FirstName);
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.LastName) && !string.IsNullOrEmpty(user.LastName))
+                    //    profileProperties.Add("LastName", user.LastName);
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.Email) && !string.IsNullOrEmpty(user.Email))
+                    //    profileProperties.Add("Email", user.Email);
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.DisplayName) && !string.IsNullOrEmpty(user.DisplayName))
+                    //    profileProperties.Add("DisplayName", user.DisplayName);
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("Website")) && !string.IsNullOrEmpty(user.Website))
+                    //    profileProperties.Add("Website", user.Website);
+
+                    //if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("PreferredLocale")) && !string.IsNullOrEmpty(user.Locale))
+                    //{
+                    //    if (LocaleController.IsValidCultureName(user.Locale.Replace('_', '-')))
+                    //        profileProperties.Add("PreferredLocale", user.Locale.Replace('_', '-'));
+                    //    else
+                    //        profileProperties.Add("PreferredLocale", settings.CultureCode);
+                    //}
+
+                    ////if (string.IsNullOrEmpty(objUserInfo.Profile.GetPropertyValue("PreferredTimeZone"))))
+                    ////{
+                    ////    if (string.IsNullOrEmpty(user.TimeZoneInfo))
+                    ////    {
+                    ////        if (Int32.TryParse(user.Timezone, out int timeZone))
+                    ////        {
+                    ////            var timeZoneInfo = Localization.ConvertLegacyTimeZoneOffsetToTimeZoneInfo(timeZone);
+
+                    ////            profileProperties.Add("PreferredTimeZone", timeZoneInfo.Id);
+                    ////        }
+                    ////    }
+                    ////    else
+                    ////    {
+                    ////        profileProperties.Add("PreferredTimeZone", user.TimeZoneInfo);
+                    ////    }
+                    ////}
+
+                    //addCustomProperties(profileProperties);
+
+                    //eventArgs.Profile = profileProperties;
+
+                    //onAuthenticated(eventArgs);
+                }
             }
-
-            //if (string.IsNullOrEmpty(objUserInfo.Profile.GetPropertyValue("PreferredTimeZone"))))
-            //{
-            //    if (string.IsNullOrEmpty(user.TimeZoneInfo))
-            //    {
-            //        if (Int32.TryParse(user.Timezone, out int timeZone))
-            //        {
-            //            var timeZoneInfo = Localization.ConvertLegacyTimeZoneOffsetToTimeZoneInfo(timeZone);
-
-            //            profileProperties.Add("PreferredTimeZone", timeZoneInfo.Id);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        profileProperties.Add("PreferredTimeZone", user.TimeZoneInfo);
-            //    }
-            //}
-
-            addCustomProperties(profileProperties);
-
-            eventArgs.Profile = profileProperties;
-
-            onAuthenticated(eventArgs);
         }
 
         public virtual TUserData GetCurrentUser<TUserData>() where TUserData : UserData
@@ -347,6 +414,35 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         public bool IsCurrentUserAuthorized()
         {
             return TokenResponse?.AccessToken != null;
+        }
+
+        private void SetLoginDate(string username)
+        {
+            StringBuilder mysqlstring = new StringBuilder();
+
+            mysqlstring.Append("UPDATE {databaseOwner}aspnet_Membership SET LastLoginDate = @0 where UserId in (select UserId from {databaseOwner}aspnet_Users where UserName = @1)");
+
+            using (DotNetNuke.Data.IDataContext db = DataContext.Instance())
+            {
+                db.Execute(System.Data.CommandType.Text, mysqlstring.ToString(), DateTime.Now.ToString(), username);
+            }
+        }
+
+        public bool CreateCognitoUser(string email, string DNNUsername, string password)
+        {
+            return false;
+        }
+        public bool EmailExistsAsUsername (PortalSettings settings, string email)
+        {
+            UserInfo objUserInfo = UserController.GetUserByName(settings.PortalId, email);
+            if (objUserInfo == null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
     }
