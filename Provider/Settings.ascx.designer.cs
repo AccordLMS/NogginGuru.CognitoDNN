@@ -69,6 +69,78 @@ namespace DNN.OpenId.Cognito
         protected global::System.Web.UI.WebControls.TextBox txtApiSecret;
 
         /// <summary>
+        /// lblIAMUserAccessKey control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblIAMUserAccessKey;
+
+        /// <summary>
+        /// txtIAMUserAccessKey control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtIAMUserAccessKey;
+
+        /// <summary>
+        /// lblIAMUserSecretKey control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblIAMUserSecretKey;
+
+        /// <summary>
+        /// txtIAMUserSecretKey control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtIAMUserSecretKey;
+
+        /// <summary>
+        /// lblAppUsername control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblAppUsername;
+
+        /// <summary>
+        /// txtAppUsername control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtAppUsername;
+
+        /// <summary>
+        /// lblCognitoPoolID control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblCognitoPoolID;
+
+        /// <summary>
+        /// txtCognitoPoolID control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtCognitoPoolID;
+
+        /// <summary>
         /// lblRedirectUrl control.
         /// </summary>
         /// <remarks>

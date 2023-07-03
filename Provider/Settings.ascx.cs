@@ -29,6 +29,10 @@ namespace DNN.OpenId.Cognito
                 config.ApiKey = txtApiKey.Text;
                 config.ApiSecret = txtApiSecret.Text;
                 config.Enabled = chkEnabled.Checked;
+                config.IAMUserAccessKey = txtIAMUserAccessKey.Text;
+                config.IAMUserSecretKey = txtIAMUserSecretKey.Text;
+                config.AppUsername = txtAppUsername.Text;
+                config.CognitoPoolID = txtCognitoPoolID.Text;
                 config.RedirectURL = txtRedirectURL.Text;
 
                 DNNOpenIDCognitoConfig.UpdateConfig(config);
@@ -51,6 +55,10 @@ namespace DNN.OpenId.Cognito
                 txtApiSecret.Text = config.ApiSecret;
                 txtRedirectURL.Text = config.RedirectURL;
                 chkEnabled.Checked = config.Enabled;
+                txtIAMUserAccessKey.Text = config.IAMUserAccessKey;
+                txtIAMUserSecretKey.Text = config.IAMUserSecretKey;
+                txtAppUsername.Text = config.AppUsername;
+                txtCognitoPoolID.Text = config.CognitoPoolID;
             }
             catch (Exception exc)
             {
@@ -84,12 +92,32 @@ namespace DNN.OpenId.Cognito
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "RedirectURL", out setting))
                 RedirectURL = setting;
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "IAMUserAccessKey", out setting))
+                IAMUserAccessKey = setting;
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "IAMUserSecretKey", out setting))
+                IAMUserSecretKey = setting;
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "AppUsername", out setting))
+                AppUsername = setting;
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "CognitoPoolID", out setting))
+                CognitoPoolID = setting;
         }
 
         public bool Enabled { get; set; }
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
         public string RedirectURL { get; set; }
+        public string IAMUserAccessKey { get; set; }
+        public string IAMUserSecretKey { get; set; }
+        public string AppUsername { get; set; }
+        public string CognitoPoolID { get; set; }
 
 
 
@@ -105,6 +133,10 @@ namespace DNN.OpenId.Cognito
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "ApiKey", config.ApiKey);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "ApiSecret", config.ApiSecret);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "RedirectURL", config.RedirectURL);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "IAMUserAccessKey", config.IAMUserAccessKey);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "IAMUserSecretKey", config.IAMUserSecretKey);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "AppUsername", config.AppUsername);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "CognitoPoolID", config.CognitoPoolID);
 
         }
 

@@ -1,4 +1,4 @@
-<%@ Control Language="C#" AutoEventWireup="false" Inherits="DNN.OpenId.Cognito.Settings, DNN.OpenId.Cognito" CodeBehind="Settings.ascx.cs" %>
+<%@ Control Language="C#" AutoEventWireup="false" Inherits="DNN.OpenId.Cognito.Settings" CodeBehind="Settings.ascx.cs" %>
 
 <%@ Register TagPrefix="dnn" Namespace="DotNetNuke.UI.WebControls" Assembly="DotNetNuke" %>
 
@@ -39,6 +39,22 @@
 <div class="dnnFormItem">
     <asp:Label class="cognitoLabel" ID="lblApiSecret" runat="server" Text="API Secret:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtApiSecret"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblIAMUserAccessKey" runat="server" Text="IAM User Access Key:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtIAMUserAccessKey"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblIAMUserSecretKey" runat="server" Text="IAM User Access Key:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtIAMUserSecretKey"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblAppUsername" runat="server" Text="App Username:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtAppUsername"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblCognitoPoolID" runat="server" Text="Cognito Pool ID:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtCognitoPoolID"></asp:TextBox>
 </div>
 <div class="dnnFormItem">
     <asp:Label class="cognitoLabel" ID="lblRedirectUrl" runat="server" Text="Redirect URL:" />

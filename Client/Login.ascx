@@ -1,8 +1,17 @@
-<%@ Control Language="C#" AutoEventWireup="false" Inherits="DNN.OpenId.Cognito.Login, DNN.OpenId.Cognito" CodeBehind="Login.ascx.cs" %>
+<%@ Control Language="C#" AutoEventWireup="false" Inherits="DNN.OpenId.Cognito.Login" CodeBehind="Login.ascx.cs" %>
 
 <%@ Register TagPrefix="dnn" Namespace="DotNetNuke.UI.WebControls" Assembly="DotNetNuke" %>
 
 <script type="text/javascript">
+
+    var poolData = {
+        UserPoolId: $("#txtPoolID").val(), // Your user pool id here
+        ClientId: $("#txtClientID").val()
+    };
+
+    var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    var cognitoUser;
+
     function signIn() {
 
         var username = $("#txtEmail").val();
@@ -77,25 +86,38 @@
     .cognitoParagraph { margin-left: 15px; margin-right: 15px;}
 </style>
 
-<h3 class="cognitoHeading">OpenID - Cognito Configuration</h3>
-<div class="dnnFormItem">
+<h3 class="cognitoHeading">Log In</h3>
+<asp:Label runat="server" ID="lblMessage"></asp:Label>
+<div class="dnnFormItem" runat="server" id="divEmail">
     <asp:Label class="cognitoLabel" ID="lblEmail" runat="server" Text="Email:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtEmail"></asp:TextBox>
 </div>
-<div class="dnnFormItem">
+<div class="dnnFormItem" runat="server" id="divPassword">
     <asp:Label class="cognitoLabel" ID="lblPassword" runat="server" Text="Password:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtPassword"></asp:TextBox>
 </div>
-<div class="dnnFormItem">
+<div class="dnnFormItem" runat="server" id="divUsername">
     <asp:Label class="cognitoLabel" ID="lblUsername" runat="server" Text="Username:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtUsername"></asp:TextBox>
 </div>
+<asp:Label runat="server" ID="lblErrorMessage"></asp:Label>
 
 <div class="dnnFormItem">
     <asp:Button runat="server" ID="btnLogin" Text="Login" />
 </div>
 
+<asp:HiddenField runat="server" ID="txtPoolID"></asp:HiddenField>
+<asp:HiddenField runat="server" ID="txtClientID"></asp:HiddenField>
+<input type="hidden" id="hdnServerCodeExecuted" runat="server" />
 
 
+<script type="text/javascript">
+    window.onload = function () {
+        var serverCodeExecuted = document.getElementById('<%= hdnServerCodeExecuted.ClientID %>').value;
+        if (serverCodeExecuted === "true") {
+            signIn();
+        }
+    };
+</script>
 
 

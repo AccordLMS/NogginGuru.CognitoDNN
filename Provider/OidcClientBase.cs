@@ -40,6 +40,7 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         private TokenResponse TokenResponse { get; set; }
 
         private static readonly ILog Logger = LoggerSource.Instance.GetLogger(typeof(OidcClientBase));
+        private static DNNOpenIDCognitoConfig config;
 
         private const string OAuthClientIdKey = "client_id";
         private const string OAuthClientSecretKey = "client_secret";
@@ -62,11 +63,12 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
 
         protected OidcClientBase(int portalId, AuthMode mode, string service)
         {
+            config = DNNOpenIDCognitoConfig.GetConfig(portalId);
             _authMode = mode;
             _service = service;
 
-            _apiKey = "6q238e664duf5h3uv3739i7b7l"; /*OidcConfigBase.GetConfig(_service, portalId).APIKey;*/
-            _apiSecret = "gfdfs3sif07263gi2d90ebidsph2194suu93io5l0i4ovie123p";/*OidcConfigBase.GetConfig(_service, portalId).APISecret;*/
+            _apiKey = config.ApiKey;
+            _apiSecret = config.ApiSecret;
 
             _callbackUri = _authMode == AuthMode.Login
                                     ? Globals.LoginURL(string.Empty, false)
