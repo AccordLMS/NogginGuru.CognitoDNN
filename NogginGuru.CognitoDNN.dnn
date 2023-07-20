@@ -99,7 +99,7 @@
 			<assembly>
               <path>bin</path>
               <name>Microsoft.IdentityModel.Logging.dll</name>
-              <version>5.3.0.51005</version>
+              <version>6.31.0.40607</version>
             </assembly>
 			<assembly>
               <path>bin</path>

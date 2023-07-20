@@ -61,9 +61,13 @@ namespace DNN.OpenId.Cognito
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            divUsername.Visible = false;
+            //divUsername.Visible = false;
             lblErrorMessage.Visible = false;
-            lblMessage.Text = "Your username will soon me migrated to the email address associated with your account. Please enter your email address and password";
+            lblMessage.Text = "Your username will soon me migrated to the email address associated with your account. Please enter your email address, username and password";
+            if (!IsPostBack)
+            {
+                txtPassword.Attributes["type"] = "password";
+            }
         }
 
         private void LoginButton_Click(object sender, EventArgs e)
@@ -97,7 +101,21 @@ namespace DNN.OpenId.Cognito
                     password = txtPassword.Text;
                 }               
             }
-                     
+
+            if (username == string.Empty)
+            {
+                if (txtUsername.Text == string.Empty || txtUsername.Text.Trim() == "")
+                {
+                    lblErrorMessage.Visible = true;
+                    lblErrorMessage.Text = "You need to enter a Username.";
+                    return;
+                }
+                else
+                {
+                    username = txtUsername.Text;
+                }
+            }
+
             txtPoolID.Value = config.CognitoPoolID;
             txtClientID.Value = config.ApiKey;
             
@@ -111,16 +129,17 @@ namespace DNN.OpenId.Cognito
                 bool userCreated = false;
                 if (!EmailExistsAsUsername(PortalSettings, txtEmail.Text))
                 {
-                    username = txtUsername.Text;
-                    //WE NEED TO ASK FOR THE USERNAME AND CREATE IT IN COGNITO
+                    //username = txtUsername.Text;
+                    ////WE NEED TO ASK FOR THE USERNAME AND CREATE IT IN COGNITO
 
-                    if(username == string.Empty || username.Trim() == "")
-                    {
-                        divEmail.Visible = false;
-                        divPassword.Visible = false;
-                        lblMessage.Text = "Please enter your usarname to complete migration.";
-                        return;
-                    }
+                    //if(username == string.Empty || username.Trim() == "")
+                    //{
+                    //    divEmail.Visible = false;
+                    //    divPassword.Visible = false;
+                    //    divUsername.Visible = true;
+                    //    lblMessage.Text = "Please enter your username to complete migration.";
+                    //    return;
+                    //}
 
                     UserController.ValidateUser(PortalId, username, password, "", "", portalName, ref loginStatus);
 
@@ -336,7 +355,7 @@ namespace DNN.OpenId.Cognito
                     // Authentication successful
                     var accessToken = response.AuthenticationResult.AccessToken;
                     var idToken = response.AuthenticationResult.IdToken;
-                    
+
                     var handler = new JwtSecurityTokenHandler();
                     var token = handler.ReadJwtToken(accessToken);
 
@@ -347,7 +366,7 @@ namespace DNN.OpenId.Cognito
                         if (claim.Type.StartsWith("username"))
                         {
                             var cognitoUsername = claim.Value;
-                            if(cognitoUsername != null && cognitoUsername.Length > 0)
+                            if (cognitoUsername != null && cognitoUsername.Length > 0)
                             {
                                 string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
                                 string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
@@ -387,8 +406,8 @@ namespace DNN.OpenId.Cognito
                             }
                             return;
                         }
-                    }                  
-                
+                    }
+
                 }
                 else
                 {
@@ -397,7 +416,7 @@ namespace DNN.OpenId.Cognito
                     lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
                     divEmail.Visible = true;
                     divPassword.Visible = true;
-                    divUsername.Visible = false;
+                    divUsername.Visible = true;
                     lblMessage.Visible = true;
                     lblMessage.Text = "Please enter your email and password";
                     return;
