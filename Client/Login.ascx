@@ -1,6 +1,7 @@
 <%@ Control Language="C#" AutoEventWireup="false" Inherits="DNN.OpenId.Cognito.Login" CodeBehind="Login.ascx.cs" %>
 
-<%@ Register TagPrefix="dnn" Namespace="DotNetNuke.UI.WebControls" Assembly="DotNetNuke" %>
+<%@ Register TagPrefix="dnn" Assembly="DotNetNuke" Namespace="DotNetNuke.UI.WebControls"%>
+<%@ Register TagPrefix="dnn" Namespace="DotNetNuke.Web.UI.WebControls.Internal" Assembly="DotNetNuke.Web" %>
 
 <script type="text/javascript">
 
@@ -62,61 +63,44 @@
 
 </script>
 
-<style type="text/css">
-    .dnnFormItem {
-  clear: both;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  position: relative;
-  text-align: left;
-}
-	.cognitoLabel{
-		border: 0;
-        display: inline-block;
-        max-width: 100%;
-        margin-bottom: 5px;
-        font-weight: 700;
-        margin: 0;
-        padding: 0;
-        vertical-align: baseline;
-	}
-	.cognitoTextbox{
-		width: 200px;
-        min-width: 200px;
-        margin-bottom: 5px;
-        max-width: 445px;
-        padding: 8px;
-        background: #ffffff;
-        border: 1px solid #c9c9c9;
-        border-radius: 3px;
-        font-size: 12px;
-        color: #333;
-	}
 
-    .cognitoHeading { clear: both; margin-left: 15px;}
-    .cognitoParagraph { margin-left: 15px; margin-right: 15px;}
-</style>
-
-<asp:Label runat="server" ID="lblMessage"></asp:Label>
-<div class="dnnFormItem" runat="server" id="divEmail">
-    <asp:Label class="cognitoLabel" ID="lblEmail" runat="server" Text="Email:" />
-    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtEmail"></asp:TextBox>
-</div>
-<div class="dnnFormItem" runat="server" id="divUsername">
-    <asp:Label class="cognitoLabel" ID="lblUsername" runat="server" Text="Username:" />
-    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtUsername"></asp:TextBox>
-</div>
-<div class="dnnFormItem" runat="server" id="divPassword">
-    <asp:Label class="cognitoLabel" ID="lblPassword" runat="server" Text="Password:" />
-    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtPassword"></asp:TextBox>
+<div class="dnnForm dnnLoginService dnnClear">
+    <div class="dnnFormItem">
+        <asp:Label runat="server" CssClass="dnnFormMessage dnnFormInfo" style="margin-top:20px" ID="lblMessage"></asp:Label>
+    </div>    
+    <div class="dnnFormItem" runat="server" id="divEmail">
+        <div class="dnnLabel">
+            <asp:label id="lblEmail" AssociatedControlID="txtEmail" Text="Email:" runat="server" CssClass="dnnFormLabel" />
+        </div>        
+        <asp:textbox id="txtEmail" runat="server" />
+    </div>
+    <div class="dnnFormItem" runat="server" id="divUsername">
+        <div class="dnnLabel">
+            <asp:label id="lblUsername" AssociatedControlID="txtUsername" runat="server" Text="Username:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
+        </div>
+        <asp:textbox id="txtUsername" runat="server" />
+    </div>
+    <div class="dnnFormItem" runat="server" id="divPassword">
+        <div class="dnnLabel">
+            <asp:label id="lblPassword" AssociatedControlID="txtPassword" runat="server" Text="Password:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
+        </div>
+        <asp:textbox id="txtPassword" textmode="Password" runat="server" />
+    </div>
+    <div class="dnnFormItem">
+        <asp:label id="lblLoginRememberMe" runat="server" CssClass="dnnFormLabel"  />
+        <span class="dnnLoginRememberMe"><asp:checkbox id="chkCookie" resourcekey="Remember" runat="server" />Remember Login</span>
+    </div>
+    <div class="dnnFormItem">
+        <asp:Label runat="server" CssClass="dnnFormMessage dnnFormError" ID="lblErrorMessage"></asp:Label>
+    </div>    
+    <div class="dnnFormItem">
+        <asp:label id="lblempty" runat="server" CssClass="dnnFormLabel" />
+        <asp:Button runat="server" ID="btnLogin" Text="Login" cssclass="dnnPrimaryAction" CausesValidation="false" />
+        <asp:HyperLink id="cancelLink" runat="server" CssClass="dnnSecondaryAction" resourcekey="cmdCancel" CausesValidation="false" />        
+    </div>
+    
 </div>
 
-<asp:Label runat="server" ID="lblErrorMessage"></asp:Label>
-
-<div class="dnnFormItem">
-    <asp:Button runat="server" ID="btnLogin" Text="Login" />
-</div>
 
 <asp:HiddenField runat="server" ID="txtPoolID"></asp:HiddenField>
 <asp:HiddenField runat="server" ID="txtClientID"></asp:HiddenField>
