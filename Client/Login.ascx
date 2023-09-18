@@ -84,9 +84,21 @@
         <div class="dnnLabel">
             <asp:label id="lblPassword" AssociatedControlID="txtPassword" runat="server" Text="Password:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
         </div>
-        <asp:textbox id="txtPassword" textmode="Password" runat="server" />
+        <asp:textbox id="txtPassword" runat="server" />
     </div>
-    <div class="dnnFormItem">
+    <div class="dnnFormItem" runat="server" id="divEmailCode">
+        <div class="dnnLabel">
+            <asp:label id="lblEmailCode" AssociatedControlID="txtPassword" runat="server" Text="Code:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
+        </div>
+        <asp:textbox id="txtEmailCode" runat="server" />
+    </div>
+    <div class="dnnFormItem" runat="server" id="divNewPassword">
+        <div class="dnnLabel">
+            <asp:label id="lblNewPassword" AssociatedControlID="txtPassword" runat="server" Text="New Password:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
+        </div>
+        <asp:textbox id="txtNewPassword" runat="server" />
+    </div>
+    <div class="dnnFormItem" runat="server" id="divRememberMe">
         <asp:label id="lblLoginRememberMe" runat="server" CssClass="dnnFormLabel"  />
         <span class="dnnLoginRememberMe"><asp:checkbox id="chkCookie" resourcekey="Remember" runat="server" />Remember Login</span>
     </div>
@@ -96,9 +108,14 @@
     <div class="dnnFormItem">
         <asp:label id="lblempty" runat="server" CssClass="dnnFormLabel" />
         <asp:Button runat="server" ID="btnLogin" Text="Login" cssclass="dnnPrimaryAction" CausesValidation="false" />
+        <asp:Button runat="server" ID="btnSendResetLink" Text="Send Reset Code" cssclass="dnnPrimaryAction" CausesValidation="false" />
+        <asp:Button runat="server" ID="btnResetPassword" Text="Reset Password" cssclass="dnnPrimaryAction" CausesValidation="false" />
         <asp:HyperLink id="cancelLink" runat="server" CssClass="dnnSecondaryAction" resourcekey="cmdCancel" CausesValidation="false" />        
     </div>
-    
+    <asp:textbox id="txtPasswordAux" textmode="Password" runat="server" />
+    <div class="dnnFormItem" runat="server" id="divResetPassword">
+        Forgot password?  <a id="lnkResetPassword" runat="server" href="#">Reset Password</a>
+    </div>
 </div>
 
 

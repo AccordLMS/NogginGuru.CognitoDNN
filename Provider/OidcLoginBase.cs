@@ -23,8 +23,12 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
             if (Mode == AuthMode.Login)
                 shouldAuthorize = shouldAuthorize || OAuthClient.IsCurrentUserAuthorized();
 
-            if (shouldAuthorize && OAuthClient.Authorize(PortalSettings, IPAddress) == AuthorisationResult.Authorized)
-                OAuthClient.AuthenticateUser(GetCurrentUser(), PortalSettings, IPAddress, AddCustomProperties, OnUserAuthenticated);
+            if (shouldAuthorize)
+            {
+                OAuthClient.redirectToUrl();
+            }
+            //if (shouldAuthorize && OAuthClient.Authorize(PortalSettings, IPAddress) == AuthorisationResult.Authorized)
+            //    OAuthClient.AuthenticateUser(GetCurrentUser(), PortalSettings, IPAddress, AddCustomProperties, OnUserAuthenticated);
         }
 
         protected virtual void AddCustomProperties(NameValueCollection properties)

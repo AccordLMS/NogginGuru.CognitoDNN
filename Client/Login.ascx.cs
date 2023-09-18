@@ -17,6 +17,7 @@ using DotNetNuke.Security.Membership;
 using DotNetNuke.Services.Authentication.Oidc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Amazon.Extensions.CognitoAuthentication;
 using System.Threading;
 using System.Security.Cryptography;
@@ -27,6 +28,15 @@ using ProcsIT.Dnn.Authentication.OpenIdConnect;
 using System.Web.UI.WebControls;
 using Amazon;
 using DotNetNuke.Services.Mail;
+using System.Text.RegularExpressions;
+using Amazon.Runtime.Internal;
+using DotNetNuke.Framework.Providers;
+using DotNetNuke.Common;
+using DotNetNuke.Entities.Tabs;
+using System.Web;
+using Newtonsoft.Json.Linq;
+using Microsoft.IdentityModel.Tokens;
+
 
 
 #endregion
@@ -52,6 +62,9 @@ namespace DNN.OpenId.Cognito
         {
             base.OnInit(e);
             btnLogin.Click += new EventHandler(LoginButton_Click);
+            btnSendResetLink.Click += new EventHandler(SendResetPassword_Click);
+            btnResetPassword.Click += new EventHandler(ResetPassword_Click);
+            lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
             OAuthClient = new OidcClient(PortalId, Mode);
             config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
 
@@ -61,13 +74,42 @@ namespace DNN.OpenId.Cognito
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            //divUsername.Visible = false;
-            lblErrorMessage.Visible = false;
-            lblMessage.Text = "Your username will soon me migrated to the email address associated with your account. Please enter your email address, username and password";
-            if (!IsPostBack)
+
+            //Uri currentUrl = HttpContext.Current.Request.Url;
+
+            //// Use the TabInfo to get the login URL
+            //string loginUrl = currentUrl.ToString();
+            //if (loginUrl.Contains("?"))
+            //{
+            //    lnkResetPassword.HRef = loginUrl + "&ResetPassword=true";
+            //}
+            //else
+            //{
+            //    lnkResetPassword.HRef = loginUrl + "?ResetPassword=true";
+            //}
+            //lnkResetPassword.HRef = loginUrl + "?ResetPassword=true";
+
+            if (Request.QueryString["ResetPassword"] != null)
             {
-                txtPassword.Attributes["type"] = "password";
             }
+            else
+            {
+                txtPasswordAux.Visible = false;
+                divUsername.Visible = false;
+                lblErrorMessage.Visible = false;
+                divNewPassword.Visible = false;
+                divEmailCode.Visible = false;
+                lblMessage.Text = "Your username will soon be migrated to the email address associated with your account. Please enter your email address, username and password";
+                btnSendResetLink.Visible = false;
+                btnResetPassword.Visible = false;
+                if (!IsPostBack)
+                {
+                    txtPassword.Attributes["type"] = "password";
+                    txtNewPassword.Attributes["type"] = "password"; 
+                }
+            }
+            
+            
         }
 
         private void LoginButton_Click(object sender, EventArgs e)
@@ -88,13 +130,30 @@ namespace DNN.OpenId.Cognito
                 }
             }
 
+            if (!IsValidEmail(email))
+            {
+                lblErrorMessage.Visible = true;
+                lblErrorMessage.Text = "You need to enter a valid Email address.";
+                return;
+            }
+ 
+
             if(password == string.Empty)
             {
                 if (txtPassword.Text == string.Empty || txtPassword.Text.Trim() == "")
                 {
-                    lblErrorMessage.Visible = true;
-                    lblErrorMessage.Text = "You need to enter a Password.";
-                    return;
+                    if(txtPasswordAux.Text == string.Empty || txtPasswordAux.Text.Trim() == "")
+                    {
+                        lblErrorMessage.Visible = true;
+                        lblErrorMessage.Text = "You need to enter a Password.";
+                        return;
+                    }
+                    else
+                    {
+                        txtPassword.Text = txtPasswordAux.Text;
+                        password = txtPassword.Text;
+                    }
+                                        
                 }
                 else
                 {
@@ -102,19 +161,19 @@ namespace DNN.OpenId.Cognito
                 }               
             }
 
-            if (username == string.Empty)
-            {
-                if (txtUsername.Text == string.Empty || txtUsername.Text.Trim() == "")
-                {
-                    lblErrorMessage.Visible = true;
-                    lblErrorMessage.Text = "You need to enter a Username.";
-                    return;
-                }
-                else
-                {
-                    username = txtUsername.Text;
-                }
-            }
+            //if (username == string.Empty)
+            //{
+            //    if (txtUsername.Text == string.Empty || txtUsername.Text.Trim() == "")
+            //    {
+            //        lblErrorMessage.Visible = true;
+            //        lblErrorMessage.Text = "You need to enter a Username.";
+            //        return;
+            //    }
+            //    else
+            //    {
+            //        username = txtUsername.Text;
+            //    }
+            //}
 
             txtPoolID.Value = config.CognitoPoolID;
             txtClientID.Value = config.ApiKey;
@@ -129,21 +188,22 @@ namespace DNN.OpenId.Cognito
                 bool userCreated = false;
                 if (!EmailExistsAsUsername(PortalSettings, txtEmail.Text))
                 {
-                    //username = txtUsername.Text;
-                    ////WE NEED TO ASK FOR THE USERNAME AND CREATE IT IN COGNITO
+                    username = txtUsername.Text;
+                    //WE NEED TO ASK FOR THE USERNAME AND CREATE IT IN COGNITO
 
-                    //if(username == string.Empty || username.Trim() == "")
-                    //{
-                    //    divEmail.Visible = false;
-                    //    divPassword.Visible = false;
-                    //    divUsername.Visible = true;
-                    //    lblMessage.Text = "Please enter your username to complete migration.";
-                    //    return;
-                    //}
+                    if (username == string.Empty || username.Trim() == "")
+                    {
+                        divEmail.Visible = false;
+                        divPassword.Visible = false;
+                        divUsername.Visible = true;
+                        lblMessage.Text = "Please enter your username to complete migration.";
+                        txtPasswordAux.Text = txtPassword.Text;
+                        return;
+                    }
 
                     UserController.ValidateUser(PortalId, username, password, "", "", portalName, ref loginStatus);
 
-                    if (loginStatus == UserLoginStatus.LOGIN_SUCCESS)
+                    if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
                         userCreated = CreateCognitoUser(txtEmail.Text, txtUsername.Text, txtPassword.Text, PortalSettings);
                     }
@@ -166,7 +226,7 @@ namespace DNN.OpenId.Cognito
                     //THE USERNAME IS THE EMAIL. WE NEED TO CREATE IT IN COGNITO
                     UserController.ValidateUser(PortalId, email, password, "", "", portalName, ref loginStatus);
 
-                    if (loginStatus == UserLoginStatus.LOGIN_SUCCESS)
+                    if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
                         userCreated = CreateCognitoUser(txtEmail.Text, txtEmail.Text, txtPassword.Text, PortalSettings);
                     }
@@ -200,6 +260,60 @@ namespace DNN.OpenId.Cognito
             {
                 this.CustomLogin(txtEmail.Text, txtPassword.Text, portalName);      
             }
+
+        }
+
+        private void SendResetPassword_Click(object sender, EventArgs e)
+        {
+            SendPasswordResetLink(txtEmail.Text);
+            divEmail.Visible = false;
+            divUsername.Visible = false;
+            divPassword.Visible = false;
+            divRememberMe.Visible = false;
+            divResetPassword.Visible = false;
+            btnLogin.Visible = false;
+            btnSendResetLink.Visible = false;
+            txtPasswordAux.Visible = false;
+            lblErrorMessage.Visible = false;
+            lblMessage.Text = "An email was sent with a code to reset the Password. Please enter the code and your new password below to reset it.";
+            divNewPassword.Visible = true;
+            divEmailCode.Visible = true;
+            btnResetPassword.Visible = true;
+
+        }
+
+        private void ResetPassword_Click(object sender, EventArgs e)
+        {
+            ResetPassword(txtEmail.Text);
+            divEmail.Visible = false;
+            divUsername.Visible = false;
+            divPassword.Visible = false;
+            divRememberMe.Visible = false;
+            divResetPassword.Visible = false;
+            btnLogin.Visible = false;
+            btnSendResetLink.Visible = false;
+            txtPasswordAux.Visible = false;
+            lblErrorMessage.Visible = false;
+            lblMessage.Text = "Your password has been reset.";
+            divNewPassword.Visible = false;
+            divEmailCode.Visible = false;
+            btnResetPassword.Visible = false;
+
+        }
+
+        private void LinkResetPassword_Click(object sender, EventArgs e)
+        {
+            divEmail.Visible = true;
+            divUsername.Visible = false;
+            divPassword.Visible = false;
+            divRememberMe.Visible = false;
+            divResetPassword.Visible = false;
+            btnLogin.Visible = false;
+            btnSendResetLink.Visible = true;
+            txtPasswordAux.Visible = false;
+            lblErrorMessage.Visible = false;
+            lblMessage.Text = "Please enter your email address and we will send an email with a link to Reset your password";
+
 
         }
 
@@ -320,6 +434,59 @@ namespace DNN.OpenId.Cognito
             }
         }
 
+        public void SendPasswordResetLink(string username)
+        {
+            string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
+            string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
+            string cognitoUserPoolID = config.CognitoPoolID;
+
+            BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
+
+            AmazonCognitoIdentityProviderClient providerClient = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
+
+            var secretHash = CalculateSecretHash(username, config.ApiKey, config.ApiSecret);
+
+            var adminCreateUserPasswordResetRequest = new ForgotPasswordRequest
+            {
+                ClientId = config.ApiKey,
+                Username = username,
+                SecretHash = secretHash,
+            };
+
+            providerClient.ForgotPassword(adminCreateUserPasswordResetRequest);
+        }
+
+        public void ResetPassword(string username)
+        {
+            string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
+            string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
+            string cognitoUserPoolID = config.CognitoPoolID;
+
+            BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
+
+            AmazonCognitoIdentityProviderClient providerClient = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
+
+            var secretHash = CalculateSecretHash(username, config.ApiKey, config.ApiSecret);
+
+            // Create a ConfirmForgotPasswordRequest
+            var confirmForgotPasswordRequest = new ConfirmForgotPasswordRequest
+            {
+                ClientId = config.ApiKey,
+                SecretHash = secretHash,
+                Username = username,
+                ConfirmationCode = txtEmailCode.Text, // The code received in the email
+                Password = txtNewPassword.Text,
+            };
+
+            // Confirm the forgot password request
+            var confirmForgotPasswordResponse = providerClient.ConfirmForgotPassword(confirmForgotPasswordRequest);
+
+            if(confirmForgotPasswordResponse.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            {
+                divEmail.Visible = true;
+            }
+
+        }
 
         [HttpPost]
         public void CustomLogin(string username, string password, string portalName)
@@ -346,6 +513,11 @@ namespace DNN.OpenId.Cognito
                 },
                     ClientId = clientID
                 };
+                request.ClientMetadata = new Dictionary<string, string>
+                 {
+                        {"scope", "openid"}, // Include the "openid" scope here
+                 };
+
 
                 var response = _client.InitiateAuth(request);
 
@@ -354,10 +526,34 @@ namespace DNN.OpenId.Cognito
                 {
                     // Authentication successful
                     var accessToken = response.AuthenticationResult.AccessToken;
+                    if(accessToken != null)
+                    {
+                        if(accessToken != "")
+                        {
+                            SetCookie("cognitoAccessToken", accessToken, 120);
+                        }
+                    }
                     var idToken = response.AuthenticationResult.IdToken;
-
+                    
                     var handler = new JwtSecurityTokenHandler();
                     var token = handler.ReadJwtToken(accessToken);
+
+                    var jwtToken = handler.ReadJwtToken(idToken);
+
+                    if (jwtToken.Payload.TryGetValue("scope", out var scopes))
+                    {
+                        var scopeString = scopes.ToString();
+                        if (scopeString.Contains("openid"))
+                        {
+                            // The "openid" scope is present in the token
+                            Console.WriteLine("Token includes 'openid' scope.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Token does not include 'openid' scope.");
+                        }
+                    }
+
 
                     var profileProperties = new Dictionary<string, string>();
                     foreach (var claim in token.Claims)
@@ -422,10 +618,30 @@ namespace DNN.OpenId.Cognito
                     return;
                 }
             }
+            catch (Amazon.CognitoIdentityProvider.Model.NotAuthorizedException ex)
+            {
+                //USER DID NOT AUTHENTICATE IN COGNITO
+                lblErrorMessage.Visible = true;
+                lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+                divEmail.Visible = true;
+                divPassword.Visible = true;
+                divUsername.Visible = false;
+                lblMessage.Visible = true;
+                lblMessage.Text = "Please enter your email and password";
+                return;
+            }
             catch (Exception ex)
             {
-                // Handle any exceptions
-                
+                //USER DID NOT AUTHENTICATE IN COGNITO
+                lblErrorMessage.Visible = true;
+                lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+                divEmail.Visible = true;
+                divPassword.Visible = true;
+                divUsername.Visible = false;
+                lblMessage.Visible = true;
+                lblMessage.Text = "Please enter your email and password";
+                return;
+
             }
         }
 
@@ -440,6 +656,37 @@ namespace DNN.OpenId.Cognito
             }
         }
 
+        static bool IsValidEmail(string email)
+        {
+            // Regular expression pattern for validating email addresses
+            string pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            return Regex.IsMatch(email, pattern);
+        }
+
+        public void SetCookie(string key, string value, int expirationMinutes)
+        {
+            if(ExistsCookie(key))
+            {
+                Response.Cookies.Remove(key);                
+            }
+           
+            HttpCookie cookie = new HttpCookie(key, value);
+            cookie.Expires = DateTime.UtcNow.AddMinutes(expirationMinutes);
+
+            Response.Cookies.Add(cookie);           
+        }
+
+        public bool ExistsCookie(string cookieName)
+        {
+            foreach (string cookie in Request.Cookies.AllKeys)
+            {
+                if (cookie == cookieName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
 
     }

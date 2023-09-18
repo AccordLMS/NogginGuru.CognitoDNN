@@ -35,6 +35,8 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         protected string Scope { get; set; }
         protected string APIResource { get; set; }
 
+        private static DNNOpenIDCognitoConfig moduleConfig;
+
         private string VerificationCode => HttpContext.Current.Request.Params[OAuthCodeKey];
 
         private TokenResponse TokenResponse { get; set; }
@@ -63,12 +65,12 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
 
         protected OidcClientBase(int portalId, AuthMode mode, string service)
         {
-            config = DNNOpenIDCognitoConfig.GetConfig(portalId);
+            moduleConfig = DNNOpenIDCognitoConfig.GetConfig(portalId);
             _authMode = mode;
             _service = service;
 
-            _apiKey = config.ApiKey;
-            _apiSecret = config.ApiSecret;
+            _apiKey = moduleConfig.ApiKey;
+            _apiSecret = moduleConfig.ApiSecret;
 
             _callbackUri = _authMode == AuthMode.Login
                                     ? Globals.LoginURL(string.Empty, false)
@@ -150,6 +152,15 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         {
             // Just a simple implementation of a random number between 123400 and 9999999
             return _random.Next(123400, 9999999).ToString(CultureInfo.InvariantCulture);
+        }
+
+        public virtual void redirectToUrl()
+        {
+            string url = moduleConfig.RedirectURL;
+
+            if (url == null) return;
+
+            HttpContext.Current.Response.Redirect(url + "?AuthorizationCode=" + VerificationCode);
         }
 
         private string ComputeHash(HashAlgorithm hashAlgorithm, string data)

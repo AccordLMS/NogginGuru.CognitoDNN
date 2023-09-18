@@ -14,12 +14,12 @@ namespace ProcsIT.Dnn.Authentication.OpenIdConnect.Components
         public OidcClient(int portalId, AuthMode mode)
           : base(portalId, mode, "Oidc")
         {
-            AuthorizationEndpoint = "https://noggigurutest1.auth.us-east-1.amazoncognito.com/oauth2/authorize";
+            AuthorizationEndpoint = "https://nogginguru.auth.us-east-1.amazoncognito.com/oauth2/authorize";
             TokenEndpoint = "https://noggigurutest1.auth.us-east-1.amazoncognito.com/oauth2/token";
             UserInfoEndpoint = "https://noggigurutest1.auth.us-east-1.amazoncognito.com/oauth2/userInfo";
 
             //Scope = HttpUtility.UrlEncode("openid profile offline_access api1");
-            Scope = HttpUtility.UrlEncode("openid profile");//from Javier
+            Scope = HttpUtility.UrlEncode("openid");//from Javier
         }
     }
 }
