@@ -60,7 +60,10 @@
     <asp:Label class="cognitoLabel" ID="lblRedirectUrl" runat="server" Text="Redirect URL:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtRedirectURL"></asp:TextBox>
 </div>
-
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblLoginMessage" runat="server" Text="Login Message:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtLoginMessage"></asp:TextBox>
+</div>
 
 
 

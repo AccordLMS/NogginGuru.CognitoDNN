@@ -75,31 +75,16 @@ namespace DNN.OpenId.Cognito
         {
             base.OnLoad(e);
 
-            //Uri currentUrl = HttpContext.Current.Request.Url;
 
-            //// Use the TabInfo to get the login URL
-            //string loginUrl = currentUrl.ToString();
-            //if (loginUrl.Contains("?"))
-            //{
-            //    lnkResetPassword.HRef = loginUrl + "&ResetPassword=true";
-            //}
-            //else
-            //{
-            //    lnkResetPassword.HRef = loginUrl + "?ResetPassword=true";
-            //}
-            //lnkResetPassword.HRef = loginUrl + "?ResetPassword=true";
 
-            if (Request.QueryString["ResetPassword"] != null)
-            {
-            }
-            else
+            if (Request.QueryString["ResetPassword"] == null)
             {
                 txtPasswordAux.Visible = false;
                 divUsername.Visible = false;
                 lblErrorMessage.Visible = false;
                 divNewPassword.Visible = false;
                 divEmailCode.Visible = false;
-                lblMessage.Text = "Your username will soon be migrated to the email address associated with your account. Please enter your email address, username and password";
+                lblMessage.Text = config.LoginMessage;
                 btnSendResetLink.Visible = false;
                 btnResetPassword.Visible = false;
                 if (!IsPostBack)
@@ -161,19 +146,6 @@ namespace DNN.OpenId.Cognito
                 }               
             }
 
-            //if (username == string.Empty)
-            //{
-            //    if (txtUsername.Text == string.Empty || txtUsername.Text.Trim() == "")
-            //    {
-            //        lblErrorMessage.Visible = true;
-            //        lblErrorMessage.Text = "You need to enter a Username.";
-            //        return;
-            //    }
-            //    else
-            //    {
-            //        username = txtUsername.Text;
-            //    }
-            //}
 
             txtPoolID.Value = config.CognitoPoolID;
             txtClientID.Value = config.ApiKey;
@@ -511,13 +483,14 @@ namespace DNN.OpenId.Cognito
                     { "PASSWORD", password },
                     { "SECRET_HASH", secretHash }
                 },
-                    ClientId = clientID
-                };
-                request.ClientMetadata = new Dictionary<string, string>
+                    ClientId = clientID,
+                    ClientMetadata = new Dictionary<string, string>
                  {
-                        {"scope", "openid"}, // Include the "openid" scope here
-                 };
+                    {"scope", "openid"}, // Include the "openid" scope here
+                 }
+            };
 
+                
 
                 var response = _client.InitiateAuth(request);
 
@@ -526,13 +499,17 @@ namespace DNN.OpenId.Cognito
                 {
                     // Authentication successful
                     var accessToken = response.AuthenticationResult.AccessToken;
-                    if(accessToken != null)
+                    if (accessToken != null && accessToken != "")
                     {
-                        if(accessToken != "")
-                        {
-                            SetCookie("cognitoAccessToken", accessToken, 120);
-                        }
+                        SetCookie("cognitoAccessToken", accessToken, 120);
                     }
+
+                    var refreshToken = response.AuthenticationResult.RefreshToken;
+                    if(refreshToken != null && refreshToken != "")
+                    {
+                        SetCookie("cognitoRefreshToken", refreshToken, 120);
+                    }
+
                     var idToken = response.AuthenticationResult.IdToken;
                     
                     var handler = new JwtSecurityTokenHandler();

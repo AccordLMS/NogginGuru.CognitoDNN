@@ -17,8 +17,6 @@ namespace DNN.OpenId.Cognito
 {
     public partial class Settings : AuthenticationSettingsBase
     {
-        private const string usrPREFIX = "usr" + "_";
-
         public override void UpdateSettings()
         {
             try
@@ -34,6 +32,7 @@ namespace DNN.OpenId.Cognito
                 config.AppUsername = txtAppUsername.Text;
                 config.CognitoPoolID = txtCognitoPoolID.Text;
                 config.RedirectURL = txtRedirectURL.Text;
+                config.LoginMessage = txtLoginMessage.Text;
 
                 DNNOpenIDCognitoConfig.UpdateConfig(config);
 
@@ -59,6 +58,7 @@ namespace DNN.OpenId.Cognito
                 txtIAMUserSecretKey.Text = config.IAMUserSecretKey;
                 txtAppUsername.Text = config.AppUsername;
                 txtCognitoPoolID.Text = config.CognitoPoolID;
+                txtLoginMessage.Text = config.LoginMessage;
             }
             catch (Exception exc)
             {
@@ -72,7 +72,7 @@ namespace DNN.OpenId.Cognito
     public class DNNOpenIDCognitoConfig : AuthenticationConfigBase
     {
         private const string PREFIX = "DNN.OpenID.Cognito_";
-        private const string usrPREFIX = "usr_";
+
         protected DNNOpenIDCognitoConfig(int portalID) : base(portalID)
         {
             this.PortalID = portalID;
@@ -87,7 +87,7 @@ namespace DNN.OpenId.Cognito
 
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "ApiSecret", out setting))
-                ApiSecret = setting;      
+                ApiSecret = setting;
 
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "RedirectURL", out setting))
@@ -108,6 +108,16 @@ namespace DNN.OpenId.Cognito
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "CognitoPoolID", out setting))
                 CognitoPoolID = setting;
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "LoginMessage", out setting))
+            {
+                if (setting == Null.NullString)
+                    LoginMessage = "Your username will soon be migrated to the email address associated with your account. Please enter your email address and password";
+                else
+                    LoginMessage = setting;
+            }
+            else { LoginMessage = "Your username will soon be migrated to the email address associated with your account. Please enter your email address and password"; }
         }
 
         public bool Enabled { get; set; }
@@ -118,6 +128,7 @@ namespace DNN.OpenId.Cognito
         public string IAMUserSecretKey { get; set; }
         public string AppUsername { get; set; }
         public string CognitoPoolID { get; set; }
+        public string LoginMessage { get; set; }
 
 
 
@@ -137,6 +148,7 @@ namespace DNN.OpenId.Cognito
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "IAMUserSecretKey", config.IAMUserSecretKey);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "AppUsername", config.AppUsername);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "CognitoPoolID", config.CognitoPoolID);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "LoginMessage", config.LoginMessage);
 
         }
 
