@@ -56,6 +56,9 @@
     <Reference Include="DotNetNuke, Version=9.2.1.533, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DotNetNuke.Core.9.2.1.533\lib\net40\DotNetNuke.dll</HintPath>
     </Reference>
+    <Reference Include="DotNetNuke.Instrumentation">
+      <HintPath>..\..\..\Nogging_guru Project\APPLICATION\Interzoic.AccordLMS\CustomReferences\DotNetNuke.Instrumentation.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.ApplicationBlocks.Data, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DotNetNuke.Core.9.2.1.533\lib\net40\Microsoft.ApplicationBlocks.Data.dll</HintPath>
     </Reference>
@@ -204,6 +207,9 @@
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System" />
+    <Reference Include="Telerik.Web.UI">
+      <HintPath>..\..\..\Nogging_guru Project\APPLICATION\Interzoic.AccordLMS\CustomReferences\Telerik.Web.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Login.ascx.cs">

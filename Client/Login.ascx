@@ -131,6 +131,12 @@
             signIn();
         }
     };
+    function hideErrorLabel() {
+        var errorLabel = document.getElementById('<%= lblErrorMessage.ClientID %>');
+        if (errorLabel) {
+            errorLabel.style.display = 'none';
+        }
+    }
 </script>
 
 
