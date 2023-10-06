@@ -36,7 +36,7 @@
       <HintPath>..\packages\DotNetNuke.Core.9.2.1.533\lib\net40\DotNetNuke.dll</HintPath>
     </Reference>
     <Reference Include="DotNetNuke.Instrumentation">
-      <HintPath>..\packages\DotnetNuke.core.9.7.0\DotNetNuke.Instrumentation.dll</HintPath>
+      <HintPath>..\..\..\Nogging_guru Project\APPLICATION\Interzoic.AccordLMS\CustomReferences\DotNetNuke.Instrumentation.dll</HintPath>
     </Reference>
     <Reference Include="IdentityModel, Version=2.6.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IdentityModel.2.6.0\lib\net45\IdentityModel.dll</HintPath>
@@ -65,6 +65,9 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
+    <Reference Include="Telerik.Web.UI">
+      <HintPath>..\..\..\Nogging_guru Project\APPLICATION\Interzoic.AccordLMS\CustomReferences\Telerik.Web.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

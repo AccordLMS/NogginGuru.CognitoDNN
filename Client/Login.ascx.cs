@@ -107,6 +107,7 @@ namespace DNN.OpenId.Cognito
                 {
                     lblErrorMessage.Visible = true;
                     lblErrorMessage.Text = "You need to enter an Email address.";
+                    System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                     return;
                 }
                 else
@@ -119,6 +120,7 @@ namespace DNN.OpenId.Cognito
             {
                 lblErrorMessage.Visible = true;
                 lblErrorMessage.Text = "You need to enter a valid Email address.";
+                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                 return;
             }
  
@@ -131,6 +133,7 @@ namespace DNN.OpenId.Cognito
                     {
                         lblErrorMessage.Visible = true;
                         lblErrorMessage.Text = "You need to enter a Password.";
+                        System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                         return;
                     }
                     else
@@ -184,6 +187,7 @@ namespace DNN.OpenId.Cognito
                         //DNN Login failed
                         lblErrorMessage.Visible = true;
                         lblErrorMessage.Text = "Login failed. Username or password are incorrect.";
+                        System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                         divEmail.Visible=true;
                         divPassword.Visible=true;   
                         divUsername.Visible=true;
@@ -207,6 +211,7 @@ namespace DNN.OpenId.Cognito
                         //DNN Login failed
                         lblErrorMessage.Visible = true;
                         lblErrorMessage.Text = "Login failed. Username or password are incorrect.";
+                        System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                         divEmail.Visible = true;
                         divPassword.Visible = true;
                         divUsername.Visible = true;
@@ -225,6 +230,7 @@ namespace DNN.OpenId.Cognito
                     //Error creating cognito user
                     lblErrorMessage.Visible = true;
                     lblErrorMessage.Text = "There was a problem migrating your user. Please contact your administration";
+                    System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                     return;
                 }
             }
@@ -587,6 +593,7 @@ namespace DNN.OpenId.Cognito
                     //USER DID NOT AUTHENTICATE IN COGNITO
                     lblErrorMessage.Visible = true;
                     lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+                    System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                     divEmail.Visible = true;
                     divPassword.Visible = true;
                     divUsername.Visible = true;
@@ -600,6 +607,7 @@ namespace DNN.OpenId.Cognito
                 //USER DID NOT AUTHENTICATE IN COGNITO
                 lblErrorMessage.Visible = true;
                 lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                 divEmail.Visible = true;
                 divPassword.Visible = true;
                 divUsername.Visible = false;
@@ -612,6 +620,7 @@ namespace DNN.OpenId.Cognito
                 //USER DID NOT AUTHENTICATE IN COGNITO
                 lblErrorMessage.Visible = true;
                 lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                 divEmail.Visible = true;
                 divPassword.Visible = true;
                 divUsername.Visible = false;
