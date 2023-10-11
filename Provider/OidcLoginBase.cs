@@ -19,14 +19,14 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
         {
             base.OnLoad(e);
 
-            var shouldAuthorize = OAuthClient.IsCurrentService() && OAuthClient.HasVerificationCode();
-            if (Mode == AuthMode.Login)
-                shouldAuthorize = shouldAuthorize || OAuthClient.IsCurrentUserAuthorized();
+            //var shouldAuthorize = OAuthClient.IsCurrentService() && OAuthClient.HasVerificationCode();
+            //if (Mode == AuthMode.Login)
+            //    shouldAuthorize = shouldAuthorize || OAuthClient.IsCurrentUserAuthorized();
 
-            if (shouldAuthorize)
-            {
-                OAuthClient.redirectToUrl();
-            }
+            //if (shouldAuthorize)
+            //{
+            //    OAuthClient.redirectToUrl();
+            //}
             //if (shouldAuthorize && OAuthClient.Authorize(PortalSettings, IPAddress) == AuthorisationResult.Authorized)
             //    OAuthClient.AuthenticateUser(GetCurrentUser(), PortalSettings, IPAddress, AddCustomProperties, OnUserAuthenticated);
         }

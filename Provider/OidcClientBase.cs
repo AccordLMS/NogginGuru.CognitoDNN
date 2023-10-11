@@ -93,60 +93,60 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
                                         };
 
             // Call authorization endpoint
-            HttpContext.Current.Response.Redirect(AuthorizationEndpoint + "?" + parameters.ToNormalizedString(), true);
+            //HttpContext.Current.Response.Redirect(AuthorizationEndpoint + "?" + parameters.ToNormalizedString(), true);
         }
 
-        public virtual AuthorisationResult Authorize(PortalSettings settings, string IPAddress)
-        {
-            // TODO: When user is allowed to give consent, what to do when certain items are denied?
-            // refresh_token -> unable to refresh
-            // userClaims => only sub is known, other claims remain empty
-            // api1 => no access to api
-            // The client can be configured to set required items or not ask for consent. But if not:
-            // TODO: implement missing refresh token, unable to access api
+        //public virtual AuthorisationResult Authorize(PortalSettings settings, string IPAddress)
+        //{
+        //    // TODO: When user is allowed to give consent, what to do when certain items are denied?
+        //    // refresh_token -> unable to refresh
+        //    // userClaims => only sub is known, other claims remain empty
+        //    // api1 => no access to api
+        //    // The client can be configured to set required items or not ask for consent. But if not:
+        //    // TODO: implement missing refresh token, unable to access api
 
             
 
 
-            var parameters = new List<QueryParameter>
-            {
-                new QueryParameter { Name = OAuthClientIdKey, Value = _apiKey },
-                new QueryParameter { Name = OAuthRedirectUriKey, Value = _callbackUri },
-                new QueryParameter { Name = OAuthClientSecretKey, Value = _apiSecret },
-                new QueryParameter { Name = OAuthGrantTypeKey, Value = "authorization_code" },
-                new QueryParameter { Name = OAuthCodeKey, Value = VerificationCode }
-            };
+        //    var parameters = new List<QueryParameter>
+        //    {
+        //        new QueryParameter { Name = OAuthClientIdKey, Value = _apiKey },
+        //        new QueryParameter { Name = OAuthRedirectUriKey, Value = _callbackUri },
+        //        new QueryParameter { Name = OAuthClientSecretKey, Value = _apiSecret },
+        //        new QueryParameter { Name = OAuthGrantTypeKey, Value = "authorization_code" },
+        //        new QueryParameter { Name = OAuthCodeKey, Value = VerificationCode }
+        //    };
 
-            if (!string.IsNullOrEmpty(APIResource))
-                parameters.Add(new QueryParameter { Name = "resource", Value = APIResource });
+        //    if (!string.IsNullOrEmpty(APIResource))
+        //        parameters.Add(new QueryParameter { Name = "resource", Value = APIResource });
 
-            var responseText = ExecuteWebRequest(HttpMethod.Post, new Uri(TokenEndpoint), parameters.ToNormalizedString(), string.Empty);
-            if (responseText == null)
-                return AuthorisationResult.Denied;
+        //    var responseText = ExecuteWebRequest(HttpMethod.Post, new Uri(TokenEndpoint), parameters.ToNormalizedString(), string.Empty);
+        //    if (responseText == null)
+        //        return AuthorisationResult.Denied;
 
-            TokenResponse = new TokenResponse(responseText);
+        //    TokenResponse = new TokenResponse(responseText);
 
-            if (TokenResponse.IsError)
-                return AuthorisationResult.Denied;
-
-
-
-            // IdentityToken is available, perform checks:
-            //var acceptedScopes = HttpContext.Current.Request["Scope"];
-            var userId = GetUserId(TokenResponse.IdentityToken);
-
-            if (userId == null)
-                return AuthorisationResult.Denied;
-
-            //var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-            //var objUserInfo = UserController.ValidateUser(settings.PortalId, userId, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
-            //if (objUserInfo != null && (objUserInfo.IsDeleted || loginStatus != UserLoginStatus.LOGIN_SUCCESS))
-            //    return AuthorisationResult.Denied;
+        //    if (TokenResponse.IsError)
+        //        return AuthorisationResult.Denied;
 
 
-            AuthTokenExpiry = GetExpiry(Convert.ToInt32(TokenResponse.ExpiresIn));
-            return TokenResponse == null ? AuthorisationResult.Denied : AuthorisationResult.Authorized;
-        }
+
+        //    // IdentityToken is available, perform checks:
+        //    //var acceptedScopes = HttpContext.Current.Request["Scope"];
+        //    var userId = GetUserId(TokenResponse.IdentityToken);
+
+        //    if (userId == null)
+        //        return AuthorisationResult.Denied;
+
+        //    //var loginStatus = UserLoginStatus.LOGIN_FAILURE;
+        //    //var objUserInfo = UserController.ValidateUser(settings.PortalId, userId, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
+        //    //if (objUserInfo != null && (objUserInfo.IsDeleted || loginStatus != UserLoginStatus.LOGIN_SUCCESS))
+        //    //    return AuthorisationResult.Denied;
+
+
+        //    AuthTokenExpiry = GetExpiry(Convert.ToInt32(TokenResponse.ExpiresIn));
+        //    return TokenResponse == null ? AuthorisationResult.Denied : AuthorisationResult.Authorized;
+        //}
 
         private string GenerateNonce()
         {
@@ -334,60 +334,6 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
 
 
 
-                    // Raise UserAuthenticated Event
-                    //    var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, user.Id, loginStatus, _service)
-                    //{
-                    //    AutoRegister = true
-                    //};
-
-                    // TODO:
-                    //var profileProperties = new NameValueCollection();
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.FirstName) && !string.IsNullOrEmpty(user.FirstName))
-                    //    profileProperties.Add("FirstName", user.FirstName);
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.LastName) && !string.IsNullOrEmpty(user.LastName))
-                    //    profileProperties.Add("LastName", user.LastName);
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.Email) && !string.IsNullOrEmpty(user.Email))
-                    //    profileProperties.Add("Email", user.Email);
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.DisplayName) && !string.IsNullOrEmpty(user.DisplayName))
-                    //    profileProperties.Add("DisplayName", user.DisplayName);
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("Website")) && !string.IsNullOrEmpty(user.Website))
-                    //    profileProperties.Add("Website", user.Website);
-
-                    //if (string.IsNullOrEmpty(objUserInfo?.Profile.GetPropertyValue("PreferredLocale")) && !string.IsNullOrEmpty(user.Locale))
-                    //{
-                    //    if (LocaleController.IsValidCultureName(user.Locale.Replace('_', '-')))
-                    //        profileProperties.Add("PreferredLocale", user.Locale.Replace('_', '-'));
-                    //    else
-                    //        profileProperties.Add("PreferredLocale", settings.CultureCode);
-                    //}
-
-                    ////if (string.IsNullOrEmpty(objUserInfo.Profile.GetPropertyValue("PreferredTimeZone"))))
-                    ////{
-                    ////    if (string.IsNullOrEmpty(user.TimeZoneInfo))
-                    ////    {
-                    ////        if (Int32.TryParse(user.Timezone, out int timeZone))
-                    ////        {
-                    ////            var timeZoneInfo = Localization.ConvertLegacyTimeZoneOffsetToTimeZoneInfo(timeZone);
-
-                    ////            profileProperties.Add("PreferredTimeZone", timeZoneInfo.Id);
-                    ////        }
-                    ////    }
-                    ////    else
-                    ////    {
-                    ////        profileProperties.Add("PreferredTimeZone", user.TimeZoneInfo);
-                    ////    }
-                    ////}
-
-                    //addCustomProperties(profileProperties);
-
-                    //eventArgs.Profile = profileProperties;
-
-                    //onAuthenticated(eventArgs);
                 }
             }
         }
