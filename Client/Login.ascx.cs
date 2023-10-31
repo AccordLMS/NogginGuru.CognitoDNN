@@ -264,7 +264,6 @@ namespace DNN.OpenId.Cognito
             base.OnLoad(e);
 
 
-
             if (Request.QueryString["ResetPassword"] == null)
             {
                 txtPasswordAux.Visible = false;
@@ -478,7 +477,7 @@ namespace DNN.OpenId.Cognito
             btnSendResetLink.Visible = true;
             txtPasswordAux.Visible = false;
             lblErrorMessage.Visible = false;
-            lblMessage.Text = "Please enter your email address and we will send an email with a link to Reset your password";
+            lblMessage.Text = "Please enter your email address and we will send an email with a code to Reset your password";
 
 
         }
