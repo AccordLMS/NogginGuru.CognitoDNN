@@ -96,57 +96,7 @@ namespace ProcsIT.Dnn.AuthServices.OpenIdConnect
             //HttpContext.Current.Response.Redirect(AuthorizationEndpoint + "?" + parameters.ToNormalizedString(), true);
         }
 
-        //public virtual AuthorisationResult Authorize(PortalSettings settings, string IPAddress)
-        //{
-        //    // TODO: When user is allowed to give consent, what to do when certain items are denied?
-        //    // refresh_token -> unable to refresh
-        //    // userClaims => only sub is known, other claims remain empty
-        //    // api1 => no access to api
-        //    // The client can be configured to set required items or not ask for consent. But if not:
-        //    // TODO: implement missing refresh token, unable to access api
-
-            
-
-
-        //    var parameters = new List<QueryParameter>
-        //    {
-        //        new QueryParameter { Name = OAuthClientIdKey, Value = _apiKey },
-        //        new QueryParameter { Name = OAuthRedirectUriKey, Value = _callbackUri },
-        //        new QueryParameter { Name = OAuthClientSecretKey, Value = _apiSecret },
-        //        new QueryParameter { Name = OAuthGrantTypeKey, Value = "authorization_code" },
-        //        new QueryParameter { Name = OAuthCodeKey, Value = VerificationCode }
-        //    };
-
-        //    if (!string.IsNullOrEmpty(APIResource))
-        //        parameters.Add(new QueryParameter { Name = "resource", Value = APIResource });
-
-        //    var responseText = ExecuteWebRequest(HttpMethod.Post, new Uri(TokenEndpoint), parameters.ToNormalizedString(), string.Empty);
-        //    if (responseText == null)
-        //        return AuthorisationResult.Denied;
-
-        //    TokenResponse = new TokenResponse(responseText);
-
-        //    if (TokenResponse.IsError)
-        //        return AuthorisationResult.Denied;
-
-
-
-        //    // IdentityToken is available, perform checks:
-        //    //var acceptedScopes = HttpContext.Current.Request["Scope"];
-        //    var userId = GetUserId(TokenResponse.IdentityToken);
-
-        //    if (userId == null)
-        //        return AuthorisationResult.Denied;
-
-        //    //var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-        //    //var objUserInfo = UserController.ValidateUser(settings.PortalId, userId, string.Empty, _service, string.Empty, settings.PortalName, IPAddress, ref loginStatus);
-        //    //if (objUserInfo != null && (objUserInfo.IsDeleted || loginStatus != UserLoginStatus.LOGIN_SUCCESS))
-        //    //    return AuthorisationResult.Denied;
-
-
-        //    AuthTokenExpiry = GetExpiry(Convert.ToInt32(TokenResponse.ExpiresIn));
-        //    return TokenResponse == null ? AuthorisationResult.Denied : AuthorisationResult.Authorized;
-        //}
+     
 
         private string GenerateNonce()
         {

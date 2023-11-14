@@ -30,6 +30,7 @@ using System.Net;
 using System.Net.Http;
 using IdentityModel.Client;
 using System.Linq;
+using ProcsIT.Dnn.Authentication.OpenIdConnect;
 
 
 
@@ -37,32 +38,36 @@ using System.Linq;
 
 namespace DNN.OpenId.Cognito
 {
-    public partial class Login : OidcLoginBase
+    public partial class Login : AuthenticationLoginBase
     {
 
         private TokenResponse objTokenResponse { get; set; }
 
-        private const string OAuthClientIdKey = "client_id";
-        private const string OAuthClientSecretKey = "client_secret";
-        private const string OAuthRedirectUriKey = "redirect_uri";
-        private const string OAuthGrantTypeKey = "grant_type";
-        private const string OAuthCodeKey = "code";
+
 
 
         private DNNOpenIDCognitoConfig config;
         private AmazonCognitoIdentityProviderClient _client;
         private string email = string.Empty;
         private string password = string.Empty;
-        //private string username = string.Empty;
+        
         private string AuthorizationEndpoint = string.Empty;
         private string TokenEndpoint = string.Empty;
 
         private string VerificationCode => HttpContext.Current.Request.Params["code"];
 
-        protected override string AuthSystemApplicationName => "Oidc";
+        protected string AuthSystemApplicationName => "Oidc";
 
-        protected override UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
+        protected OidcClientBase OAuthClient { get; set; }
+        protected UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
 
+
+        public override bool Enabled {  
+            get {
+                if (config == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+                return config.Enabled;
+            } 
+        }
 
 
         /// <summary>
@@ -73,9 +78,9 @@ namespace DNN.OpenId.Cognito
             // hybrid flow
             var parameters = new List<QueryParameter>
                                         {
-                                            new QueryParameter { Name = "response_type", Value = OAuthCodeKey },
-                                            new QueryParameter { Name = OAuthClientIdKey, Value = config.ApiKey },
-                                            new QueryParameter { Name = OAuthRedirectUriKey, Value = config.LoginUrl },
+                                            new QueryParameter { Name = OAuthConsts.ResponseTypeKey, Value = OAuthConsts.CodeKey },
+                                            new QueryParameter { Name = OAuthConsts.ClientIdKey, Value = config.ApiKey },
+                                            new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = config.LoginUrl },
                                             new QueryParameter { Name = "scope", Value = "openid profile" },
                                             new QueryParameter { Name = "state", Value = AuthSystemApplicationName }
                                         };
@@ -93,11 +98,11 @@ namespace DNN.OpenId.Cognito
 
             var parameters = new List<QueryParameter>
             {
-                new QueryParameter { Name = OAuthClientIdKey, Value = config.ApiKey },
-                new QueryParameter { Name = OAuthRedirectUriKey, Value = config.LoginUrl },
-                new QueryParameter { Name = OAuthClientSecretKey, Value = config.ApiSecret },
-                new QueryParameter { Name = OAuthGrantTypeKey, Value = "authorization_code" },
-                new QueryParameter { Name = OAuthCodeKey, Value = VerificationCode }
+                new QueryParameter { Name = OAuthConsts.ClientIdKey, Value = config.ApiKey },
+                new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = config.LoginUrl },
+                new QueryParameter { Name = OAuthConsts.ClientSecretKey, Value = config.ApiSecret },
+                new QueryParameter { Name = OAuthConsts.GrantTypeKey, Value = "authorization_code" },
+                new QueryParameter { Name = OAuthConsts.CodeKey, Value = VerificationCode }
             };
 
 
@@ -231,7 +236,8 @@ namespace DNN.OpenId.Cognito
 
         protected override void OnInit(EventArgs e)
         {
-            config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+            if (config  == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
 
@@ -543,7 +549,7 @@ namespace DNN.OpenId.Cognito
 
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
                 //Log Error
                 return false;
@@ -579,7 +585,7 @@ namespace DNN.OpenId.Cognito
                     return false;
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 //log error
                 return false;
@@ -603,7 +609,7 @@ namespace DNN.OpenId.Cognito
         {
             string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
             string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-            string cognitoUserPoolID = config.CognitoPoolID;
+            
 
             BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
 
@@ -771,12 +777,8 @@ namespace DNN.OpenId.Cognito
                     divUsername.Visible = true;
                 }
             }
-            catch (Amazon.CognitoIdentityProvider.Model.NotAuthorizedException ex)
-            {
-                //USER DID NOT AUTHENTICATE IN COGNITO
-                PresentError();
-            }
-            catch (Exception ex)
+            
+            catch 
             {
                 //USER DID NOT AUTHENTICATE IN COGNITO
                 PresentError();
@@ -792,17 +794,31 @@ namespace DNN.OpenId.Cognito
         private void LoginUser(string portalName, string userName)
         {
             UserInfo objUserInfo = UserController.GetUserByName(userName);
-            //UserLoginStatus loginStatus = UserLoginStatus.LOGIN_SUCCESS;
-            //var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, AuthSystemApplicationName)
-            //{
-            //    Authenticated = true,
-            //    Message = "User authorized",
-            //    RememberMe = false
-            //};
+                       
+            if (config.UseHostedUI){
+                //this is required to use the logout, but does not allow the redirect
 
-            UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
-            Response.Redirect(config.RedirectURL);
-            Response.End();
+                UserLoginStatus loginStatus = UserLoginStatus.LOGIN_SUCCESS;
+                var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, AuthSystemApplicationName)
+                {
+                    Authenticated = true,
+                    Message = "User authorized",
+                    RememberMe = false
+                };
+
+                this.OnUserAuthenticated(eventArgs);
+            } else
+            {
+                //when using custom form we can use this method, it won't call the logout.aspx custom control later, but it allows the redirect.
+
+                UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
+                Response.Redirect(config.RedirectURL);
+                Response.End();
+            }
+            
+            
+
+            
         }
 
         /// <summary>
