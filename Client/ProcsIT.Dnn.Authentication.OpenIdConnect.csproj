@@ -125,9 +125,11 @@
     </Reference>
     <Reference Include="Microsoft.Extensions.DependencyInjection, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.2.2.0\lib\net461\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Extensions.DependencyModel, Version=2.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.DependencyModel.2.1.0\lib\net451\Microsoft.Extensions.DependencyModel.dll</HintPath>
@@ -280,6 +282,10 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NG.Cognito.AWS\NG.Cognito.AWS.csproj">
+      <Project>{88a657e8-3da8-4392-ab2a-720b6d6eba40}</Project>
+      <Name>NG.Cognito.AWS</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Provider\ProcsIT.Dnn.AuthServices.OpenIdConnect.csproj">
       <Project>{3185e0ca-0c71-42f5-bb07-5a24be10aac5}</Project>
       <Name>ProcsIT.Dnn.AuthServices.OpenIdConnect</Name>

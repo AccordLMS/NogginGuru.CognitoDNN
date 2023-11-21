@@ -352,7 +352,9 @@ namespace DNN.OpenId.Cognito
             if (!ExistsCognitoUser(txtEmail.Text))
             {
                 var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-                
+
+                NG.Cognito.AWS.AWSUserController awsUser = new NG.Cognito.AWS.AWSUserController(config);
+
                 bool userCreated = false;
                 if (!EmailExistsAsUsername(PortalSettings, txtEmail.Text))
                 {
@@ -373,7 +375,7 @@ namespace DNN.OpenId.Cognito
 
                     if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
-                        userCreated = CreateCognitoUser(txtEmail.Text, txtUsername.Text, txtPassword.Text, PortalSettings);
+                        userCreated = awsUser.CreateCognitoUser(txtEmail.Text, txtUsername.Text, txtPassword.Text, PortalSettings);
                     }
                     else
                     {
@@ -397,7 +399,7 @@ namespace DNN.OpenId.Cognito
 
                     if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
-                        userCreated = CreateCognitoUser(txtEmail.Text, txtEmail.Text, txtPassword.Text, PortalSettings);
+                        userCreated = awsUser.CreateCognitoUser(txtEmail.Text, txtEmail.Text, txtPassword.Text, PortalSettings);
                     }
                     else
                     {
@@ -484,76 +486,6 @@ namespace DNN.OpenId.Cognito
             txtPasswordAux.Visible = false;
             lblErrorMessage.Visible = false;
             lblMessage.Text = "Please enter your email address and we will send an email with a code to Reset your password";
-
-
-        }
-
-        public bool CreateCognitoUser(string email, string DNNUsername, string password, PortalSettings settings)
-        {
-            try
-            {
-                string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
-                string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-                string cognitoAPPUsername = config.AppUsername;
-                string cognitoAPPClientID = config.ApiKey;
-                string cognitoAPPSecretKey = config.ApiSecret;
-                string cognitoUserPoolID = config.CognitoPoolID;
-
-                UserInfo objUserInfo = UserController.GetUserByName(settings.PortalId, DNNUsername);
-
-                BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
-
-                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
-
-                //Generate SECRET_HASH
-                byte[] message = Encoding.UTF8.GetBytes(cognitoAPPUsername + cognitoAPPClientID);
-                byte[] key = Encoding.UTF8.GetBytes(cognitoAPPSecretKey);
-                System.Security.Cryptography.HMACSHA256 hmac = new System.Security.Cryptography.HMACSHA256(key);
-                byte[] hash = hmac.ComputeHash(message);
-                string hashStr = Convert.ToBase64String(hash);
-
-                var request = new AdminCreateUserRequest
-                {
-                    UserPoolId = cognitoUserPoolID,
-                    Username = email,
-                    TemporaryPassword = null,
-                    MessageAction = "SUPPRESS", // Optional: This prevents sending a welcome email to the user
-                    UserAttributes = new List<AttributeType>
-                {
-                    new AttributeType { Name = "email", Value = email },
-                    new AttributeType { Name = "email_verified", Value = "true" },
-                    new AttributeType { Name = "custom:FirstName", Value = objUserInfo.FirstName },
-                    new AttributeType { Name = "custom:LastName", Value = objUserInfo.LastName },
-                    new AttributeType { Name = "custom:IsSuperUser", Value = objUserInfo.IsSuperUser ? "1" : "0" },
-                    new AttributeType { Name = "custom:DisplayName", Value = objUserInfo.DisplayName },
-                    new AttributeType { Name = "custom:DNNUsername", Value = objUserInfo.Username },
-                },
-                    ClientMetadata = new Dictionary<string, string>
-                {
-                    { "SECRET_HASH", hashStr }
-                }
-                };
-
-                provider.AdminCreateUser(request);
-
-                //after user created, set the password
-                var passwordRequest = new AdminSetUserPasswordRequest
-                {
-                    UserPoolId = cognitoUserPoolID,
-                    Username = email,
-                    Password = password,
-                    Permanent = true
-                };
-
-                provider.AdminSetUserPassword(passwordRequest);
-
-                return true;
-            }
-            catch
-            {
-                //Log Error
-                return false;
-            }
 
 
         }

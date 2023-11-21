@@ -78,7 +78,7 @@ namespace DNN.OpenId.Cognito
     {
         private const string PREFIX = "DNN.OpenID.Cognito_";
 
-        protected DNNOpenIDCognitoConfig(int portalID) : base(portalID)
+        public DNNOpenIDCognitoConfig(int portalID) : base(portalID)
         {
             this.PortalID = portalID;
             Enabled = true;
