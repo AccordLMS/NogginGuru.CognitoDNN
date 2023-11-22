@@ -32,6 +32,7 @@ namespace NG.Cognito.WebApi
         {
             try
             {
+
                 string strData = Request.Content.ReadAsStringAsync().Result;
 
                 NameValueCollection data = HttpUtility.ParseQueryString(strData);
@@ -47,7 +48,6 @@ namespace NG.Cognito.WebApi
                 // 1- check API token in the header
                 if (liveFormsController.CheckSubmissionGUID(submissionGUID))
                 {
-
                     // 2- get user from dnn
                     UserInfo dnnUser = UserController.GetUserById(portalId, userId);
 
@@ -64,11 +64,13 @@ namespace NG.Cognito.WebApi
                 }
                 else
                 {
+                    DotNetNuke.Services.Exceptions.Exceptions.LogException(new Exception("Incorrect User Registration Token"));
                     return Request.CreateResponse(HttpStatusCode.InternalServerError, "Incorrrect token");
                 }
             }
             catch (Exception ex)
             {
+                DotNetNuke.Services.Exceptions.Exceptions.LogException(ex);
                 return Request.CreateResponse(HttpStatusCode.InternalServerError, ex.Message);
             }
         }

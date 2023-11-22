@@ -31,6 +31,8 @@ using System.Net.Http;
 using IdentityModel.Client;
 using System.Linq;
 using ProcsIT.Dnn.Authentication.OpenIdConnect;
+using DotNetNuke.Common;
+using DotNetNuke.UI.Skins.Controls;
 
 
 
@@ -42,7 +44,11 @@ namespace DNN.OpenId.Cognito
     {
 
         private TokenResponse objTokenResponse { get; set; }
+        protected OidcClientBase OAuthClient { get; set; }
 
+        //Query string parameters
+        private string _CognitoVerificationCode => HttpContext.Current.Request.Params["code"];
+        private string _DNNVerificationCode => HttpContext.Current.Request.Params["verificationcode"];
 
 
 
@@ -54,11 +60,9 @@ namespace DNN.OpenId.Cognito
         private string AuthorizationEndpoint = string.Empty;
         private string TokenEndpoint = string.Empty;
 
-        private string VerificationCode => HttpContext.Current.Request.Params["code"];
-
         protected string AuthSystemApplicationName => "Oidc";
 
-        protected OidcClientBase OAuthClient { get; set; }
+        
         protected UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
 
 
@@ -102,7 +106,7 @@ namespace DNN.OpenId.Cognito
                 new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = config.LoginUrl },
                 new QueryParameter { Name = OAuthConsts.ClientSecretKey, Value = config.ApiSecret },
                 new QueryParameter { Name = OAuthConsts.GrantTypeKey, Value = "authorization_code" },
-                new QueryParameter { Name = OAuthConsts.CodeKey, Value = VerificationCode }
+                new QueryParameter { Name = OAuthConsts.CodeKey, Value = _CognitoVerificationCode }
             };
 
 
@@ -241,7 +245,10 @@ namespace DNN.OpenId.Cognito
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
 
-            if (VerificationCode != null && VerificationCode != "")
+            if (!string.IsNullOrEmpty(_DNNVerificationCode))
+                VerifyUser();
+
+            if (_CognitoVerificationCode != null && _CognitoVerificationCode != "")
             {
                 Authorize();
             }
@@ -261,6 +268,36 @@ namespace DNN.OpenId.Cognito
             
 
 
+        }
+
+
+        private void VerifyUser()
+        {
+            if (!string.IsNullOrEmpty(_DNNVerificationCode) && this.PortalSettings.UserRegistration == (int)Globals.PortalRegistrationType.VerifiedRegistration)
+            {
+                
+                try
+                {
+                    UserController.VerifyUser(_DNNVerificationCode.Replace(".", "+").Replace("-", "/").Replace("_", "="));
+
+                }
+                catch (UserAlreadyVerifiedException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("UserAlreadyVerified", this.LocalResourceFile), ModuleMessage.ModuleMessageType.YellowWarning);
+                }
+                catch (InvalidVerificationCodeException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("InvalidVerificationCode", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+                catch (UserDoesNotExistException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("UserDoesNotExist", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+                catch (Exception)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("InvalidVerificationCode", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+            }
         }
 
 
