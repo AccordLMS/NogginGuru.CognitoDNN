@@ -76,6 +76,10 @@
     <asp:Label class="cognitoLabel" ID="lblLoginMessage" runat="server" Text="Login Message:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtLoginMessage"></asp:TextBox>
 </div>
+<div class="dnnFormItem">
+    <asp:label class="cognitoLabel" id="lblHandleSSO" runat="server" Text="Handle SSO:"></asp:label>
+    <asp:CheckBox class="cognitoTextbox" Checked="true" runat="server" ID="chkHandleSSO"></asp:CheckBox>
+</div>
 
 
 

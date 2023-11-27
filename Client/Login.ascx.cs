@@ -116,7 +116,24 @@ namespace DNN.OpenId.Cognito
                 return AuthorisationResult.Denied;
 
 
-            string username = GetUserName(objTokenResponse.IdentityToken);
+            string username = String.Empty;
+            bool isFederatedLogin = false;
+
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (tokenHandler.CanReadToken(objTokenResponse.IdentityToken))
+            {
+                var token = tokenHandler.ReadJwtToken(objTokenResponse.IdentityToken);
+                isFederatedLogin = token.Claims.Count(c => c.Type == "identities") > 0;
+            }
+
+            if (isFederatedLogin)
+            {
+                username = GetDNNUserName(objTokenResponse.IdentityToken);
+            }
+            else 
+            {
+                username = GetUserName(objTokenResponse.IdentityToken);
+            }
 
             if (username == null || username == string.Empty)
                 return AuthorisationResult.Denied;
@@ -149,6 +166,60 @@ namespace DNN.OpenId.Cognito
             var token = tokenHandler.ReadJwtToken(identityToken);
             username = token.Claims.First(c => c.Type == "custom:DNNUsername").Value;
             return username;
+        }
+
+        private string GetDNNUserName(string identityToken)
+        {
+            var userName = String.Empty;
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (!tokenHandler.CanReadToken(identityToken))
+                return String.Empty;
+            var token = tokenHandler.ReadJwtToken(identityToken);
+
+            if (config.HandleSSOLogins)
+            {
+
+                UserController userController = new UserController();
+                var userInfo = new UserInfo()
+                {
+                    PortalID = PortalId,
+                    Username = token.Claims.First(c => c.Type == "email").Value,
+                    FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0],
+                    LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
+                        token.Claims.First(c => c.Type == "name").Value.Split(' ')[1] : String.Empty,
+                    Email = token.Claims.First(c => c.Type == "email").Value,
+                    Membership = { Password = "test@1234", Approved = true }
+                };
+
+                // check if the user exists, else create a user
+                if (!EmailExistsAsUsername(PortalSettings, token.Claims.First(c => c.Type == "email").Value))
+                {
+                    try
+                    {
+                        UserCreateStatus userCreateStatus = UserController.CreateUser(ref userInfo);
+                        if (userCreateStatus == UserCreateStatus.Success)
+                        {
+                            return userInfo.Username;
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        return String.Empty;
+                    }
+
+                }
+                else
+                {
+                    var user = UserController.GetUserByName(userInfo.Username);
+                    if (user != null)
+                    {
+                        return user.Username;
+                    }
+                }
+
+            }
+            return userName;
         }
 
         /// <summary>
@@ -237,7 +308,7 @@ namespace DNN.OpenId.Cognito
         protected override void OnInit(EventArgs e)
         {
             if (config  == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
-
+            
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
 
@@ -258,7 +329,7 @@ namespace DNN.OpenId.Cognito
                 lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
                 OAuthClient = new OidcClient(PortalId, Mode);
             }
-            
+
 
 
         }
