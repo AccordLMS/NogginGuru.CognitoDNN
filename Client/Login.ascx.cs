@@ -31,6 +31,7 @@ using System.Net.Http;
 using IdentityModel.Client;
 using System.Linq;
 using ProcsIT.Dnn.Authentication.OpenIdConnect;
+using DotNetNuke.Common.Utilities;
 
 
 
@@ -178,22 +179,33 @@ namespace DNN.OpenId.Cognito
 
             if (config.HandleSSOLogins)
             {
-
-                UserController userController = new UserController();
-                var userInfo = new UserInfo()
+                var userEmail = String.Empty;
+                try
                 {
-                    PortalID = PortalId,
-                    Username = token.Claims.First(c => c.Type == "email").Value,
-                    FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0],
-                    LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
-                        token.Claims.First(c => c.Type == "name").Value.Split(' ')[1] : String.Empty,
-                    Email = token.Claims.First(c => c.Type == "email").Value,
-                    Membership = { Password = "test@1234", Approved = true }
-                };
+                    userEmail = token.Claims.First(c => c.Type == "email")?.Value;
+                }
+                catch (Exception ex)
+                {
+                    
+                    userEmail = CreateSyntheticEmail(identityToken);
+                }
 
                 // check if the user exists, else create a user
-                if (!EmailExistsAsUsername(PortalSettings, token.Claims.First(c => c.Type == "email").Value))
+                if (!EmailExistsAsUsername(PortalSettings, userEmail))
                 {
+                    UserController userController = new UserController();
+
+                    var userInfo = new UserInfo()
+                    {
+                        PortalID = PortalId,
+                        Username = userEmail,
+                        FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0],
+                        LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
+                            token.Claims.First(c => c.Type == "name").Value.Split(' ')[1] : String.Empty,
+                        Email = userEmail,
+                        Membership = { Password = "test@1234", Approved = true }
+                    };
+
                     try
                     {
                         UserCreateStatus userCreateStatus = UserController.CreateUser(ref userInfo);
@@ -211,7 +223,7 @@ namespace DNN.OpenId.Cognito
                 }
                 else
                 {
-                    var user = UserController.GetUserByName(userInfo.Username);
+                    var user = UserController.GetUserByName(userEmail);
                     if (user != null)
                     {
                         return user.Username;
@@ -220,6 +232,27 @@ namespace DNN.OpenId.Cognito
 
             }
             return userName;
+        }
+
+        private string CreateSyntheticEmail(string identityToken)
+        {
+            var syntheticEmail = String.Empty;
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (!tokenHandler.CanReadToken(identityToken))
+                return String.Empty;
+            var token = tokenHandler.ReadJwtToken(identityToken);
+            string identitiesClaim = token.Claims.First(c => c.Type == "identities").Value.ToString();
+            var identitiesClaimJson = JObject.Parse(identitiesClaim);
+
+            var FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0].ToLower();
+            var LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
+                            token.Claims.First(c => c.Type == "name").Value.Split(' ')[1].ToLower() : String.Empty;
+            var userId = token.Claims.First(c => c.Type == "sub")?.Value;
+            var domain = identitiesClaimJson["providerName"]?.ToString().ToLower();
+
+            // syntheticEmail = String.IsNullOrEmpty(LastName) ? $"{FirstName}@{domain}.com" : $"{FirstName}.{LastName}@{domain}.com";
+            syntheticEmail =  $"{userId}@{domain}.com";
+            return syntheticEmail;
         }
 
         /// <summary>
