@@ -169,6 +169,11 @@ namespace DNN.OpenId.Cognito
             return username;
         }
 
+        /// <summary>
+        /// For federated logins, check if the user exists, else creates a user
+        /// </summary>
+        /// <param name="identityToken"></param>
+        /// <returns></returns>
         private string GetDNNUserName(string identityToken)
         {
             var userName = String.Empty;
@@ -187,10 +192,10 @@ namespace DNN.OpenId.Cognito
                 catch (Exception ex)
                 {
                     
-                    userEmail = CreateSyntheticEmail(identityToken);
+                    userEmail = ConstructSyntheticEmail(identityToken);
                 }
 
-                // check if the user exists, else create a user
+                
                 if (!EmailExistsAsUsername(PortalSettings, userEmail))
                 {
                     UserController userController = new UserController();
@@ -234,7 +239,12 @@ namespace DNN.OpenId.Cognito
             return userName;
         }
 
-        private string CreateSyntheticEmail(string identityToken)
+        /// <summary>
+        /// Construct a synthetic email string from claims in the id token
+        /// </summary>
+        /// <param name="identityToken"></param>
+        /// <returns></returns>
+        private string ConstructSyntheticEmail(string identityToken)
         {
             var syntheticEmail = String.Empty;
             var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
@@ -250,7 +260,6 @@ namespace DNN.OpenId.Cognito
             var userId = token.Claims.First(c => c.Type == "sub")?.Value;
             var domain = identitiesClaimJson["providerName"]?.ToString().ToLower();
 
-            // syntheticEmail = String.IsNullOrEmpty(LastName) ? $"{FirstName}@{domain}.com" : $"{FirstName}.{LastName}@{domain}.com";
             syntheticEmail =  $"{userId}@{domain}.com";
             return syntheticEmail;
         }
