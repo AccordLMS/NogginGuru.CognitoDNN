@@ -204,9 +204,6 @@ namespace DNN.OpenId.Cognito
                     {
                         PortalID = PortalId,
                         Username = userEmail,
-                        FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0],
-                        LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
-                            token.Claims.First(c => c.Type == "name").Value.Split(' ')[1] : String.Empty,
                         Email = userEmail,
                         Membership = { Password = "test@1234", Approved = true }
                     };
@@ -253,10 +250,6 @@ namespace DNN.OpenId.Cognito
             var token = tokenHandler.ReadJwtToken(identityToken);
             string identitiesClaim = token.Claims.First(c => c.Type == "identities").Value.ToString();
             var identitiesClaimJson = JObject.Parse(identitiesClaim);
-
-            var FirstName = token.Claims.First(c => c.Type == "name").Value.Split(' ')[0].ToLower();
-            var LastName = token.Claims.First(c => c.Type == "name").Value.Split(' ').Count() > 1 ?
-                            token.Claims.First(c => c.Type == "name").Value.Split(' ')[1].ToLower() : String.Empty;
             var userId = token.Claims.First(c => c.Type == "sub")?.Value;
             var domain = identitiesClaimJson["providerName"]?.ToString().ToLower();
 
