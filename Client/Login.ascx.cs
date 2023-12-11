@@ -31,6 +31,7 @@ using System.Net.Http;
 using IdentityModel.Client;
 using System.Linq;
 using ProcsIT.Dnn.Authentication.OpenIdConnect;
+using DotNetNuke.Common.Utilities;
 
 
 
@@ -116,7 +117,24 @@ namespace DNN.OpenId.Cognito
                 return AuthorisationResult.Denied;
 
 
-            string username = GetUserName(objTokenResponse.IdentityToken);
+            string username = String.Empty;
+            bool isFederatedLogin = false;
+
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (tokenHandler.CanReadToken(objTokenResponse.IdentityToken))
+            {
+                var token = tokenHandler.ReadJwtToken(objTokenResponse.IdentityToken);
+                isFederatedLogin = token.Claims.Count(c => c.Type == "identities") > 0;
+            }
+
+            if (isFederatedLogin)
+            {
+                username = GetDNNUserName(objTokenResponse.IdentityToken);
+            }
+            else 
+            {
+                username = GetUserName(objTokenResponse.IdentityToken);
+            }
 
             if (username == null || username == string.Empty)
                 return AuthorisationResult.Denied;
@@ -149,6 +167,94 @@ namespace DNN.OpenId.Cognito
             var token = tokenHandler.ReadJwtToken(identityToken);
             username = token.Claims.First(c => c.Type == "custom:DNNUsername").Value;
             return username;
+        }
+
+        /// <summary>
+        /// For federated logins, check if the user exists, else creates a user
+        /// </summary>
+        /// <param name="identityToken"></param>
+        /// <returns></returns>
+        private string GetDNNUserName(string identityToken)
+        {
+            var userName = String.Empty;
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (!tokenHandler.CanReadToken(identityToken))
+                return String.Empty;
+            var token = tokenHandler.ReadJwtToken(identityToken);
+
+            if (config.HandleSSOLogins)
+            {
+                var userEmail = String.Empty;
+                try
+                {
+                    userEmail = token.Claims.First(c => c.Type == "email")?.Value;
+                }
+                catch (Exception ex)
+                {
+                    
+                    userEmail = ConstructSyntheticEmail(identityToken);
+                }
+
+                
+                if (!EmailExistsAsUsername(PortalSettings, userEmail))
+                {
+                    UserController userController = new UserController();
+
+                    var userInfo = new UserInfo()
+                    {
+                        PortalID = PortalId,
+                        Username = userEmail,
+                        Email = userEmail,
+                        Membership = { Password = "test@1234", Approved = true }
+                    };
+
+                    try
+                    {
+                        UserCreateStatus userCreateStatus = UserController.CreateUser(ref userInfo);
+                        if (userCreateStatus == UserCreateStatus.Success)
+                        {
+                            return userInfo.Username;
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        return String.Empty;
+                    }
+
+                }
+                else
+                {
+                    var user = UserController.GetUserByName(userEmail);
+                    if (user != null)
+                    {
+                        return user.Username;
+                    }
+                }
+
+            }
+            return userName;
+        }
+
+        /// <summary>
+        /// Construct a synthetic email string from claims in the id token
+        /// </summary>
+        /// <param name="identityToken"></param>
+        /// <returns></returns>
+        private string ConstructSyntheticEmail(string identityToken)
+        {
+            var syntheticEmail = String.Empty;
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (!tokenHandler.CanReadToken(identityToken))
+                return String.Empty;
+            var token = tokenHandler.ReadJwtToken(identityToken);
+            string identitiesClaim = token.Claims.First(c => c.Type == "identities").Value.ToString();
+            var identitiesClaimJson = JObject.Parse(identitiesClaim);
+            var userId = token.Claims.First(c => c.Type == "sub")?.Value;
+            var domain = identitiesClaimJson["providerName"]?.ToString().ToLower();
+
+            syntheticEmail =  $"{userId}@{domain}.com";
+            return syntheticEmail;
         }
 
         /// <summary>
@@ -237,7 +343,7 @@ namespace DNN.OpenId.Cognito
         protected override void OnInit(EventArgs e)
         {
             if (config  == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
-
+            
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
 
@@ -258,7 +364,7 @@ namespace DNN.OpenId.Cognito
                 lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
                 OAuthClient = new OidcClient(PortalId, Mode);
             }
-            
+
 
 
         }
