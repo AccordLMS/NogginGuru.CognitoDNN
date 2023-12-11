@@ -65,9 +65,6 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
-    <Reference Include="Telerik.Web.UI">
-      <HintPath>..\..\..\Nogging_guru Project\APPLICATION\Interzoic.AccordLMS\CustomReferences\Telerik.Web.UI.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -75,9 +72,6 @@
     <Compile Include="AuthorisationResult.cs" />
     <Compile Include="OidcClientBase.cs" />
     <Compile Include="OidcConfigBase.cs" />
-    <Compile Include="OidcLoginBase.cs">
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
     <Compile Include="QueryParameter.cs" />
     <Compile Include="QueryParameterComparer.cs" />
     <Compile Include="Settings.ascx.cs">
