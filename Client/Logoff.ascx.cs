@@ -36,6 +36,8 @@ using DotNetNuke.Services.Authentication.OAuth;
 using ProcsIT.Dnn.Authentication.OpenIdConnect;
 using QueryParameter = ProcsIT.Dnn.AuthServices.OpenIdConnect.QueryParameter;
 using DotNetNuke.Security;
+using DotNetNuke.Common;
+using DotNetNuke.Entities.Tabs;
 
 
 
@@ -81,12 +83,22 @@ namespace DNN.OpenId.Cognito
 
         private void LogOutCognito()
         {
+            string homeUrl;
+            if (this.PortalSettings.HomeTabId > -1)
+            {
+                homeUrl = Globals.NavigateURL(this.PortalSettings.HomeTabId);
+            }
+            else
+            {
+                homeUrl = _config.LoginUrl;
+            }
             // hybrid flow
             var parameters = new List<QueryParameter>
                                         {
                                             new QueryParameter { Name = OAuthConsts.ResponseTypeKey, Value = OAuthConsts.CodeKey },
                                             new QueryParameter { Name = OAuthConsts.ClientIdKey, Value = _config.ApiKey },
-                                            new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = _config.LoginUrl },
+                                            //new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = homeUrl }, //return to home
+                                            new QueryParameter { Name = "logout_uri", Value = homeUrl }, //return to home
                                             new QueryParameter { Name = "scope", Value = "openid profile" },
                                             new QueryParameter { Name = "state", Value = AuthSystemApplicationName }
                                         };

@@ -46,9 +46,20 @@ namespace DNN.OpenId.Cognito
         private TokenResponse objTokenResponse { get; set; }
         protected OidcClientBase OAuthClient { get; set; }
 
+
+        public new string RedirectURL { 
+            get 
+            { 
+                return _redirectURL;
+            } 
+            set {} 
+        }
+
         //Query string parameters
         private string _CognitoVerificationCode => HttpContext.Current.Request.Params["code"];
         private string _DNNVerificationCode => HttpContext.Current.Request.Params["verificationcode"];
+
+        private string _redirectURL;
 
 
 
@@ -244,6 +255,7 @@ namespace DNN.OpenId.Cognito
 
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
+            _redirectURL = config.RedirectURL;
 
             if (!string.IsNullOrEmpty(_DNNVerificationCode))
                 VerifyUser();
@@ -764,30 +776,10 @@ namespace DNN.OpenId.Cognito
         {
             UserInfo objUserInfo = UserController.GetUserByName(userName);
                        
-            if (config.UseHostedUI){
-                //this is required to use the logout, but does not allow the redirect
-
-                UserLoginStatus loginStatus = UserLoginStatus.LOGIN_SUCCESS;
-                var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, AuthSystemApplicationName)
-                {
-                    Authenticated = true,
-                    Message = "User authorized",
-                    RememberMe = false
-                };
-
-                this.OnUserAuthenticated(eventArgs);
-            } else
-            {
-                //when using custom form we can use this method, it won't call the logout.aspx custom control later, but it allows the redirect.
-
-                UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
-                Response.Redirect(config.RedirectURL);
-                Response.End();
-            }
-            
-            
-
-            
+            AuthenticationController.SetAuthenticationType(AuthSystemApplicationName);
+            UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
+            Response.Redirect(config.RedirectURL);
+            Response.End();
         }
 
         /// <summary>
