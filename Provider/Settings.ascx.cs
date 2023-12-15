@@ -36,6 +36,7 @@ namespace DNN.OpenId.Cognito
                 config.LoginMessage = txtLoginMessage.Text;
                 config.UseHostedUI = chkHostedUI.Checked;
                 config.CognitoDomain = txtCognitoDomain.Text;
+                config.HandleSSOLogins = chkHandleSSO.Checked;
 
                 DNNOpenIDCognitoConfig.UpdateConfig(config);
 
@@ -64,6 +65,7 @@ namespace DNN.OpenId.Cognito
                 txtCognitoPoolID.Text = config.CognitoPoolID;
                 txtLoginMessage.Text = config.LoginMessage;
                 txtCognitoDomain.Text = config.CognitoDomain;
+                chkHandleSSO.Checked = config.HandleSSOLogins;
             }
             catch (Exception exc)
             {
@@ -135,6 +137,10 @@ namespace DNN.OpenId.Cognito
                     LoginMessage = setting;
             }
             else { LoginMessage = "Your username will soon be migrated to the email address associated with your account. Please enter your email address and password"; }
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "HandleSSOLogins", out setting))
+                HandleSSOLogins = bool.Parse(setting);
         }
 
         public bool Enabled { get; set; }
@@ -149,6 +155,8 @@ namespace DNN.OpenId.Cognito
         public bool UseHostedUI { get; set; }
         public string LoginMessage { get; set; }
         public string CognitoDomain { get; set; }
+
+        public bool HandleSSOLogins { get; set; }
 
 
 
@@ -172,6 +180,7 @@ namespace DNN.OpenId.Cognito
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "UseHostedUI", config.UseHostedUI.ToString());
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "LoginMessage", config.LoginMessage);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "CognitoDomain", config.CognitoDomain);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "HandleSSOLogins", config.HandleSSOLogins.ToString());
 
         }
 
