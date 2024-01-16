@@ -32,7 +32,10 @@ namespace DNN.OpenId.Cognito
                 config.AppUsername = txtAppUsername.Text;
                 config.CognitoPoolID = txtCognitoPoolID.Text;
                 config.RedirectURL = txtRedirectURL.Text;
+                config.LoginUrl = txtLoginURL.Text;
                 config.LoginMessage = txtLoginMessage.Text;
+                config.UseHostedUI = chkHostedUI.Checked;
+                config.CognitoDomain = txtCognitoDomain.Text;
 
                 DNNOpenIDCognitoConfig.UpdateConfig(config);
 
@@ -53,12 +56,14 @@ namespace DNN.OpenId.Cognito
                 txtApiKey.Text = config.ApiKey;
                 txtApiSecret.Text = config.ApiSecret;
                 txtRedirectURL.Text = config.RedirectURL;
+                txtLoginURL.Text = config.LoginUrl;
                 chkEnabled.Checked = config.Enabled;
                 txtIAMUserAccessKey.Text = config.IAMUserAccessKey;
                 txtIAMUserSecretKey.Text = config.IAMUserSecretKey;
                 txtAppUsername.Text = config.AppUsername;
                 txtCognitoPoolID.Text = config.CognitoPoolID;
                 txtLoginMessage.Text = config.LoginMessage;
+                txtCognitoDomain.Text = config.CognitoDomain;
             }
             catch (Exception exc)
             {
@@ -92,6 +97,10 @@ namespace DNN.OpenId.Cognito
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "RedirectURL", out setting))
                 RedirectURL = setting;
+            
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "LoginUrl", out setting))
+                LoginUrl = setting;
 
             setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "IAMUserAccessKey", out setting))
@@ -110,6 +119,14 @@ namespace DNN.OpenId.Cognito
                 CognitoPoolID = setting;
 
             setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "UseHostedUI", out setting))
+                UseHostedUI = bool.Parse(setting);
+
+            setting = Null.NullString;
+            if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "CognitoDomain", out setting))
+                CognitoDomain = setting;
+
+            setting = Null.NullString;
             if (PortalController.Instance.GetPortalSettings(portalID).TryGetValue(PREFIX + "LoginMessage", out setting))
             {
                 if (setting == Null.NullString)
@@ -124,11 +141,14 @@ namespace DNN.OpenId.Cognito
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
         public string RedirectURL { get; set; }
+        public string LoginUrl { get; set; }
         public string IAMUserAccessKey { get; set; }
         public string IAMUserSecretKey { get; set; }
         public string AppUsername { get; set; }
         public string CognitoPoolID { get; set; }
+        public bool UseHostedUI { get; set; }
         public string LoginMessage { get; set; }
+        public string CognitoDomain { get; set; }
 
 
 
@@ -144,11 +164,14 @@ namespace DNN.OpenId.Cognito
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "ApiKey", config.ApiKey);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "ApiSecret", config.ApiSecret);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "RedirectURL", config.RedirectURL);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "LoginUrl", config.LoginUrl);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "IAMUserAccessKey", config.IAMUserAccessKey);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "IAMUserSecretKey", config.IAMUserSecretKey);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "AppUsername", config.AppUsername);
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "CognitoPoolID", config.CognitoPoolID);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "UseHostedUI", config.UseHostedUI.ToString());
             PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "LoginMessage", config.LoginMessage);
+            PortalController.UpdatePortalSetting(config.PortalID, PREFIX + "CognitoDomain", config.CognitoDomain);
 
         }
 

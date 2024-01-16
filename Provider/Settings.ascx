@@ -61,6 +61,18 @@
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtRedirectURL"></asp:TextBox>
 </div>
 <div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblLoginURL" runat="server" Text="Login URL:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtLoginURL"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
+    <asp:label class="cognitoLabel" id="lblUseHostedUI" runat="server" Text="Use Hosted UI:"></asp:label>
+    <asp:CheckBox class="cognitoTextbox" Checked="true" runat="server" ID="chkHostedUI"></asp:CheckBox>
+</div>
+<div class="dnnFormItem">
+    <asp:Label class="cognitoLabel" ID="lblCognitoDomain" runat="server" Text="Cognito Domain:" />
+    <asp:TextBox class="cognitoTextbox" runat="server" ID="txtCognitoDomain"></asp:TextBox>
+</div>
+<div class="dnnFormItem">
     <asp:Label class="cognitoLabel" ID="lblLoginMessage" runat="server" Text="Login Message:" />
     <asp:TextBox class="cognitoTextbox" runat="server" ID="txtLoginMessage"></asp:TextBox>
 </div>
