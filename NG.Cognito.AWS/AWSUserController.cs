@@ -36,7 +36,9 @@ namespace NG.Cognito.AWS
 
                 BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
 
-                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
+                //Need to Put a condition here : Select that region which has the cognito user pool
+                //Put an if condition based on a variable which will choose the region like canada central or virginia
+                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.CACentral1);
 
                 //Generate SECRET_HASH
                 byte[] message = Encoding.UTF8.GetBytes(cognitoAPPUsername + cognitoAPPClientID);
