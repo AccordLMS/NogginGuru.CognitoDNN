@@ -4,7 +4,6 @@ using System;
 using System.Web.UI;
 using DotNetNuke.Services.Authentication;
 using ProcsIT.Dnn.AuthServices.OpenIdConnect;
-using System.Web.UI.HtmlControls;
 using ProcsIT.Dnn.Authentication.OpenIdConnect.Components;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Users;
@@ -15,27 +14,25 @@ using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
 using DotNetNuke.Security.Membership;
 using DotNetNuke.Services.Authentication.Oidc;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Amazon.Extensions.CognitoAuthentication;
-using System.Threading;
 using System.Security.Cryptography;
-using System.Web.ModelBinding;
-using System.Runtime.CompilerServices;
 using System.IdentityModel.Tokens.Jwt;
-using ProcsIT.Dnn.Authentication.OpenIdConnect;
-using System.Web.UI.WebControls;
-using Amazon;
-using DotNetNuke.Services.Mail;
 using System.Text.RegularExpressions;
-using Amazon.Runtime.Internal;
-using DotNetNuke.Framework.Providers;
-using DotNetNuke.Common;
-using DotNetNuke.Entities.Tabs;
 using System.Web;
 using Newtonsoft.Json.Linq;
 using Microsoft.IdentityModel.Tokens;
+using DotNetNuke.Services.Tokens;
+using HttpContext = System.Web.HttpContext;
+using DotNetNuke.Services.Localization;
+using Newtonsoft.Json;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using IdentityModel.Client;
+using System.Linq;
+using ProcsIT.Dnn.Authentication.OpenIdConnect;
+using DotNetNuke.Common;
+using DotNetNuke.UI.Skins.Controls;
 
 
 
@@ -43,38 +40,271 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace DNN.OpenId.Cognito
 {
-    public partial class Login : OidcLoginBase
+    public partial class Login : AuthenticationLoginBase
     {
-        protected HtmlGenericControl loginItem;
-        private static DNNOpenIDCognitoConfig config;
+
+        private TokenResponse objTokenResponse { get; set; }
+        protected OidcClientBase OAuthClient { get; set; }
+
+        //Query string parameters
+        private string _CognitoVerificationCode => HttpContext.Current.Request.Params["code"];
+        private string _DNNVerificationCode => HttpContext.Current.Request.Params["verificationcode"];
+
+
+
+        private DNNOpenIDCognitoConfig config;
         private AmazonCognitoIdentityProviderClient _client;
         private string email = string.Empty;
         private string password = string.Empty;
-        private string username = string.Empty;
+        
+        private string AuthorizationEndpoint = string.Empty;
+        private string TokenEndpoint = string.Empty;
 
-        protected override string AuthSystemApplicationName => "Oidc";
+        protected string AuthSystemApplicationName => "Oidc";
 
-        public override bool SupportsRegistration => false;
+        
+        protected UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
 
-        protected override UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
+
+        public override bool Enabled {  
+            get {
+                if (config == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+                return config.Enabled;
+            } 
+        }
+
+
+        /// <summary>
+        /// redirects the user to the hosted UI to get a code when comming back
+        /// </summary>
+        public virtual void GetCode()
+        {
+            // hybrid flow
+            var parameters = new List<QueryParameter>
+                                        {
+                                            new QueryParameter { Name = OAuthConsts.ResponseTypeKey, Value = OAuthConsts.CodeKey },
+                                            new QueryParameter { Name = OAuthConsts.ClientIdKey, Value = config.ApiKey },
+                                            new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = config.LoginUrl },
+                                            new QueryParameter { Name = "scope", Value = "openid profile" },
+                                            new QueryParameter { Name = "state", Value = AuthSystemApplicationName }
+                                        };
+
+            // Call authorization endpoint
+            HttpContext.Current.Response.Redirect(AuthorizationEndpoint + "?" + parameters.ToNormalizedString(), true);
+        }
+
+        /// <summary>
+        /// After you have code in the url, call the token endpoint to get the user data, and login the user in DNN
+        /// </summary>
+        /// <returns></returns>
+        public virtual AuthorisationResult Authorize()
+        {
+
+            var parameters = new List<QueryParameter>
+            {
+                new QueryParameter { Name = OAuthConsts.ClientIdKey, Value = config.ApiKey },
+                new QueryParameter { Name = OAuthConsts.RedirectUriKey, Value = config.LoginUrl },
+                new QueryParameter { Name = OAuthConsts.ClientSecretKey, Value = config.ApiSecret },
+                new QueryParameter { Name = OAuthConsts.GrantTypeKey, Value = "authorization_code" },
+                new QueryParameter { Name = OAuthConsts.CodeKey, Value = _CognitoVerificationCode }
+            };
+
+
+            var responseText = ExecuteWebRequest(HttpMethod.Post, new Uri(TokenEndpoint), parameters.ToNormalizedString());
+            if (responseText == null)
+                return AuthorisationResult.Denied;
+
+            objTokenResponse = new TokenResponse(responseText);
+
+            if (objTokenResponse.IsError)
+                return AuthorisationResult.Denied;
+
+
+            string username = GetUserName(objTokenResponse.IdentityToken);
+
+            if (username == null || username == string.Empty)
+                return AuthorisationResult.Denied;
+            else
+            {
+                //user exits and was validated in cognito, so, login to DNN
+                PortalController pController = new PortalController();
+                string portalName = pController.GetPortal(PortalId).PortalName;
+
+
+                LoginUser(portalName,username);
+
+                return AuthorisationResult.Authorized;
+            }
+            
+        }
+
+        /// <summary>
+        /// Get the username from the token
+        /// </summary>
+        /// <param name="identityToken">the identity token from cognito</param>
+        /// <returns>the dnn username</returns>
+        private string GetUserName(string identityToken)
+        {
+            string username = string.Empty;
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            if (!tokenHandler.CanReadToken(identityToken))
+                return null;
+
+            var token = tokenHandler.ReadJwtToken(identityToken);
+            username = token.Claims.First(c => c.Type == "custom:DNNUsername").Value;
+            return username;
+        }
+
+        /// <summary>
+        /// executes a web call with parameters and authentication based on module configuration
+        /// </summary>
+        /// <param name="method">web method to be used</param>
+        /// <param name="uri">URI</param>
+        /// <param name="parameters">parameters (will be included in url for get, or body for post)</param>
+        /// <returns>the full response</returns>
+        private string ExecuteWebRequest(HttpMethod method, Uri uri, string parameters )
+        {
+            WebRequest request;
+
+            if (method == HttpMethod.Post)
+            {
+                byte[] byteArray = Encoding.UTF8.GetBytes(parameters);
+
+                request = WebRequest.CreateDefault(uri);
+                request.Method = "POST";
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = byteArray.Length;
+
+                if (!string.IsNullOrEmpty(parameters))
+                {
+                    Stream dataStream = request.GetRequestStream();
+                    dataStream.Write(byteArray, 0, byteArray.Length);
+                    dataStream.Close();
+                }
+            }
+            else
+            {
+                request = WebRequest.CreateDefault(GenerateRequestUri(uri.ToString(), parameters));
+            }
+
+            if (objTokenResponse?.AccessToken != null)
+                request.Headers.Add($"Authorization: Bearer {objTokenResponse.AccessToken}");
+            else
+            {
+
+                string svcCredentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(config.ApiKey + ":" + config.ApiSecret));
+
+                request.Headers.Add("Authorization", "Basic " + svcCredentials);
+            }
+
+            try
+            {
+                using (WebResponse response = request.GetResponse())
+                using (Stream responseStream = response.GetResponseStream())
+                {
+                    if (responseStream != null)
+                    {
+                        using (var responseReader = new StreamReader(responseStream))
+                        {
+                            return responseReader.ReadToEnd();
+                        }
+                    }
+                }
+            }
+            catch (WebException ex)
+            {
+                DotNetNuke.Services.Exceptions.Exceptions.LogException(ex);
+                using (Stream responseStream = ex.Response.GetResponseStream())
+                {
+                    if (responseStream != null)
+                    {
+                        using (var responseReader = new StreamReader(responseStream))
+                        {
+                            Exception customEx = new Exception(responseReader.ReadToEnd(), ex);
+                            DotNetNuke.Services.Exceptions.Exceptions.LogException(customEx);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private Uri GenerateRequestUri(string url, string parameters)
+        {
+            if (string.IsNullOrEmpty(parameters))
+                return new Uri(url);
+
+            return new Uri(string.Format("{0}{1}{2}", url, url.Contains("?") ? "&" : "?", parameters));
+        }
+
 
         protected override void OnInit(EventArgs e)
         {
-            base.OnInit(e);
-            btnLogin.Click += new EventHandler(LoginButton_Click);
-            btnSendResetLink.Click += new EventHandler(SendResetPassword_Click);
-            btnResetPassword.Click += new EventHandler(ResetPassword_Click);
-            lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
-            OAuthClient = new OidcClient(PortalId, Mode);
-            config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+            if (config  == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
 
-            //loginItem.Visible = Mode == AuthMode.Login;
+            AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
+            TokenEndpoint = config.CognitoDomain + "/oauth2/token";
+
+            if (!string.IsNullOrEmpty(_DNNVerificationCode))
+                VerifyUser();
+
+            if (_CognitoVerificationCode != null && _CognitoVerificationCode != "")
+            {
+                Authorize();
+            }
+            else if (config.Enabled && config.UseHostedUI && UserController.Instance.GetCurrentUserInfo() != null) 
+            {
+                GetCode();
+            }
+            else 
+            {
+                base.OnInit(e);
+                btnLogin.Click += new EventHandler(LoginButton_Click);
+                btnSendResetLink.Click += new EventHandler(SendResetPassword_Click);
+                btnResetPassword.Click += new EventHandler(ResetPassword_Click);
+                lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
+                OAuthClient = new OidcClient(PortalId, Mode);
+            }
+            
+
+
         }
+
+
+        private void VerifyUser()
+        {
+            if (!string.IsNullOrEmpty(_DNNVerificationCode) && this.PortalSettings.UserRegistration == (int)Globals.PortalRegistrationType.VerifiedRegistration)
+            {
+                
+                try
+                {
+                    UserController.VerifyUser(_DNNVerificationCode.Replace(".", "+").Replace("-", "/").Replace("_", "="));
+
+                }
+                catch (UserAlreadyVerifiedException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("UserAlreadyVerified", this.LocalResourceFile), ModuleMessage.ModuleMessageType.YellowWarning);
+                }
+                catch (InvalidVerificationCodeException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("InvalidVerificationCode", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+                catch (UserDoesNotExistException)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("UserDoesNotExist", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+                catch (Exception)
+                {
+                    DotNetNuke.UI.Skins.Skin.AddModuleMessage(this, Localization.GetString("InvalidVerificationCode", this.LocalResourceFile), ModuleMessage.ModuleMessageType.RedError);
+                }
+            }
+        }
+
+
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
 
 
             if (Request.QueryString["ResetPassword"] == null)
@@ -159,11 +389,13 @@ namespace DNN.OpenId.Cognito
             if (!ExistsCognitoUser(txtEmail.Text))
             {
                 var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-                
+
+                NG.Cognito.AWS.AWSUserController awsUser = new NG.Cognito.AWS.AWSUserController(config);
+
                 bool userCreated = false;
                 if (!EmailExistsAsUsername(PortalSettings, txtEmail.Text))
                 {
-                    username = txtUsername.Text;
+                    string username = txtUsername.Text;
                     //WE NEED TO ASK FOR THE USERNAME AND CREATE IT IN COGNITO
 
                     if (username == string.Empty || username.Trim() == "")
@@ -180,7 +412,7 @@ namespace DNN.OpenId.Cognito
 
                     if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
-                        userCreated = CreateCognitoUser(txtEmail.Text, txtUsername.Text, txtPassword.Text, PortalSettings);
+                        userCreated = awsUser.CreateCognitoUser(txtEmail.Text, txtUsername.Text, txtPassword.Text, PortalSettings);
                     }
                     else
                     {
@@ -204,7 +436,7 @@ namespace DNN.OpenId.Cognito
 
                     if (loginStatus == UserLoginStatus.LOGIN_SUCCESS || loginStatus == UserLoginStatus.LOGIN_SUPERUSER)
                     {
-                        userCreated = CreateCognitoUser(txtEmail.Text, txtEmail.Text, txtPassword.Text, PortalSettings);
+                        userCreated = awsUser.CreateCognitoUser(txtEmail.Text, txtEmail.Text, txtPassword.Text, PortalSettings);
                     }
                     else
                     {
@@ -290,77 +522,7 @@ namespace DNN.OpenId.Cognito
             btnSendResetLink.Visible = true;
             txtPasswordAux.Visible = false;
             lblErrorMessage.Visible = false;
-            lblMessage.Text = "Please enter your email address and we will send an email with a link to Reset your password";
-
-
-        }
-
-        public bool CreateCognitoUser(string email, string DNNUsername, string password, PortalSettings settings)
-        {
-            try
-            {
-                string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
-                string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-                string cognitoAPPUsername = config.AppUsername;
-                string cognitoAPPClientID = config.ApiKey;
-                string cognitoAPPSecretKey = config.ApiSecret;
-                string cognitoUserPoolID = config.CognitoPoolID;
-
-                UserInfo objUserInfo = UserController.GetUserByName(settings.PortalId, DNNUsername);
-
-                BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
-
-                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
-
-                //Generate SECRET_HASH
-                byte[] message = Encoding.UTF8.GetBytes(cognitoAPPUsername + cognitoAPPClientID);
-                byte[] key = Encoding.UTF8.GetBytes(cognitoAPPSecretKey);
-                System.Security.Cryptography.HMACSHA256 hmac = new System.Security.Cryptography.HMACSHA256(key);
-                byte[] hash = hmac.ComputeHash(message);
-                string hashStr = Convert.ToBase64String(hash);
-
-                var request = new AdminCreateUserRequest
-                {
-                    UserPoolId = cognitoUserPoolID,
-                    Username = email,
-                    TemporaryPassword = null,
-                    MessageAction = "SUPPRESS", // Optional: This prevents sending a welcome email to the user
-                    UserAttributes = new List<AttributeType>
-                {
-                    new AttributeType { Name = "email", Value = email },
-                    new AttributeType { Name = "email_verified", Value = "true" },
-                    new AttributeType { Name = "custom:FirstName", Value = objUserInfo.FirstName },
-                    new AttributeType { Name = "custom:LastName", Value = objUserInfo.LastName },
-                    new AttributeType { Name = "custom:IsSuperUser", Value = objUserInfo.IsSuperUser ? "1" : "0" },
-                    new AttributeType { Name = "custom:DisplayName", Value = objUserInfo.DisplayName },
-                    new AttributeType { Name = "custom:DNNUsername", Value = objUserInfo.Username },
-                },
-                    ClientMetadata = new Dictionary<string, string>
-                {
-                    { "SECRET_HASH", hashStr }
-                }
-                };
-
-                provider.AdminCreateUser(request);
-
-                //after user created, set the password
-                var passwordRequest = new AdminSetUserPasswordRequest
-                {
-                    UserPoolId = cognitoUserPoolID,
-                    Username = email,
-                    Password = password,
-                    Permanent = true
-                };
-
-                provider.AdminSetUserPassword(passwordRequest);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                //Log Error
-                return false;
-            }
+            lblMessage.Text = "Please enter your email address and we will send an email with a code to Reset your password";
 
 
         }
@@ -392,7 +554,7 @@ namespace DNN.OpenId.Cognito
                     return false;
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 //log error
                 return false;
@@ -416,7 +578,7 @@ namespace DNN.OpenId.Cognito
         {
             string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
             string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-            string cognitoUserPoolID = config.CognitoPoolID;
+            
 
             BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
 
@@ -507,13 +669,13 @@ namespace DNN.OpenId.Cognito
                     var accessToken = response.AuthenticationResult.AccessToken;
                     if (accessToken != null && accessToken != "")
                     {
-                        SetCookie("cognitoAccessToken", accessToken, 120);
+                        //SetCookie("cognitoAccessToken", accessToken, 120);
                     }
 
                     var refreshToken = response.AuthenticationResult.RefreshToken;
                     if(refreshToken != null && refreshToken != "")
                     {
-                        SetCookie("cognitoRefreshToken", refreshToken, 120);
+                        //SetCookie("cognitoRefreshToken", refreshToken, 120);
                     }
 
                     var idToken = response.AuthenticationResult.IdToken;
@@ -538,7 +700,6 @@ namespace DNN.OpenId.Cognito
                     }
 
 
-                    var profileProperties = new Dictionary<string, string>();
                     foreach (var claim in token.Claims)
                     {
                         // Extract the profile properties from the claims
@@ -565,17 +726,7 @@ namespace DNN.OpenId.Cognito
                                 {
                                     if (attribute.Name == "custom:DNNUsername")
                                     {
-                                        UserInfo objUserInfo = UserController.GetUserByName(attribute.Value);
-                                        UserLoginStatus loginStatus = UserLoginStatus.LOGIN_SUCCESS;
-                                        var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, "Oidc")
-                                        {
-                                            Authenticated = true,
-                                            Message = "User authorized",
-                                            RememberMe = false
-                                        };
-
-                                        UserController.UserLogin(PortalId, objUserInfo, portalName, "Oidc", false);
-                                        Response.Redirect(config.RedirectURL);
+                                        LoginUser(portalName, attribute.Value);
                                         return;
                                     }
                                 }
@@ -590,45 +741,68 @@ namespace DNN.OpenId.Cognito
                 }
                 else
                 {
-                    //USER DID NOT AUTHENTICATE IN COGNITO
-                    lblErrorMessage.Visible = true;
-                    lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
-                    System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
-                    divEmail.Visible = true;
-                    divPassword.Visible = true;
+                    PresentError();
+
                     divUsername.Visible = true;
-                    lblMessage.Visible = true;
-                    lblMessage.Text = "Please enter your email and password";
-                    return;
                 }
             }
-            catch (Amazon.CognitoIdentityProvider.Model.NotAuthorizedException ex)
+            
+            catch 
             {
                 //USER DID NOT AUTHENTICATE IN COGNITO
-                lblErrorMessage.Visible = true;
-                lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
-                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
-                divEmail.Visible = true;
-                divPassword.Visible = true;
-                divUsername.Visible = false;
-                lblMessage.Visible = true;
-                lblMessage.Text = "Please enter your email and password";
-                return;
-            }
-            catch (Exception ex)
-            {
-                //USER DID NOT AUTHENTICATE IN COGNITO
-                lblErrorMessage.Visible = true;
-                lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
-                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
-                divEmail.Visible = true;
-                divPassword.Visible = true;
-                divUsername.Visible = false;
-                lblMessage.Visible = true;
-                lblMessage.Text = "Please enter your email and password";
-                return;
+                PresentError();
 
             }
+        }
+
+        /// <summary>
+        /// it logs in the DNN user
+        /// </summary>
+        /// <param name="portalName">dnn portal name</param>
+        /// <param name="userName">user name</param>
+        private void LoginUser(string portalName, string userName)
+        {
+            UserInfo objUserInfo = UserController.GetUserByName(userName);
+                       
+            if (config.UseHostedUI){
+                //this is required to use the logout, but does not allow the redirect
+
+                UserLoginStatus loginStatus = UserLoginStatus.LOGIN_SUCCESS;
+                var eventArgs = new UserAuthenticatedEventArgs(objUserInfo, objUserInfo.Email, loginStatus, AuthSystemApplicationName)
+                {
+                    Authenticated = true,
+                    Message = "User authorized",
+                    RememberMe = false
+                };
+
+                this.OnUserAuthenticated(eventArgs);
+            } else
+            {
+                //when using custom form we can use this method, it won't call the logout.aspx custom control later, but it allows the redirect.
+
+                UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
+                Response.Redirect(config.RedirectURL);
+                Response.End();
+            }
+            
+            
+
+            
+        }
+
+        /// <summary>
+        /// shows the error controls with appropiate message
+        /// </summary>
+        private void PresentError()
+        {
+            lblErrorMessage.Visible = true;
+            lblErrorMessage.Text = "Login failed. Email or password are incorrect.";
+            System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
+            divEmail.Visible = true;
+            divPassword.Visible = true;
+            divUsername.Visible = false;
+            lblMessage.Visible = true;
+            lblMessage.Text = "Please enter your email and password";
         }
 
         private string CalculateSecretHash(string username, string clientID, string clientSecret)

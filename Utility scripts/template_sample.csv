@@ -1,0 +1,2 @@
+profile,address,birthdate,gender,preferred_username,updated_at,website,picture,phone_number,phone_number_verified,zoneinfo,custom:DNNUsername,custom:DisplayName,custom:FirstName,custom:LastName,custom:IsSuperUser,locale,email,email_verified,given_name,family_name,middle_name,name,nickname,cognito:mfa_enabled,cognito:username
+,,,,,,,,,,,mridul.thapa@accolitedigital.com,mridul thapa,mridul,thapa,0,,mridul.thapa@accolitedigital.com,TRUE,,,,,,FALSE,mridul.thapa@accolitedigital.com

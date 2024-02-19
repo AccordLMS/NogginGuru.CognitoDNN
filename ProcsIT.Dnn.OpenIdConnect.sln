@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcsIT.Dnn.AuthServices.Op
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcsIT.Dnn.Authentication.OpenIdConnect", "Client\ProcsIT.Dnn.Authentication.OpenIdConnect.csproj", "{8BFB1965-7C12-4663-8466-C7B7E99849D1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NG.Cognito.WebApi", "NG.Cognito.WebApi\NG.Cognito.WebApi.csproj", "{BE726E32-A58F-40E9-B8D2-FF74175E684A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NG.Cognito.AWS", "NG.Cognito.AWS\NG.Cognito.AWS.csproj", "{88A657E8-3DA8-4392-AB2A-720B6D6EBA40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{8BFB1965-7C12-4663-8466-C7B7E99849D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8BFB1965-7C12-4663-8466-C7B7E99849D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8BFB1965-7C12-4663-8466-C7B7E99849D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE726E32-A58F-40E9-B8D2-FF74175E684A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE726E32-A58F-40E9-B8D2-FF74175E684A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE726E32-A58F-40E9-B8D2-FF74175E684A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE726E32-A58F-40E9-B8D2-FF74175E684A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88A657E8-3DA8-4392-AB2A-720B6D6EBA40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88A657E8-3DA8-4392-AB2A-720B6D6EBA40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88A657E8-3DA8-4392-AB2A-720B6D6EBA40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88A657E8-3DA8-4392-AB2A-720B6D6EBA40}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
