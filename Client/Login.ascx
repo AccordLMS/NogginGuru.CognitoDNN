@@ -91,6 +91,9 @@
             <asp:label id="lblEmailCode" AssociatedControlID="txtPassword" runat="server" Text="Code:" CssClass="dnnFormLabel" ViewStateMode="Disabled" />
         </div>
         <asp:textbox id="txtEmailCode" runat="server" />
+        <div class="dnnLabel">
+            <asp:Label ID="lblPasswordError" AssociatedControlID="txtPassword" runat="server" CssClass="dnnFormError" Visible="false"></asp:Label>
+        </div>
     </div>
     <div class="dnnFormItem" runat="server" id="divNewPassword">
         <div class="dnnLabel">

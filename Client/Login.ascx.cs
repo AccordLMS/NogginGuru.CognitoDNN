@@ -1,39 +1,34 @@
 #region Usings
 
-using System;
-using System.Web.UI;
-using DotNetNuke.Services.Authentication;
-using ProcsIT.Dnn.AuthServices.OpenIdConnect;
-using ProcsIT.Dnn.Authentication.OpenIdConnect.Components;
-using DotNetNuke.Entities.Portals;
-using DotNetNuke.Entities.Users;
-using Amazon.Runtime;
-using System.Collections.Generic;
-using System.Text;
 using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
+using Amazon.Runtime;
+using DotNetNuke.Common;
+using DotNetNuke.Entities.Portals;
+using DotNetNuke.Entities.Users;
 using DotNetNuke.Security.Membership;
+using DotNetNuke.Services.Authentication;
 using DotNetNuke.Services.Authentication.Oidc;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text.RegularExpressions;
-using System.Web;
-using Newtonsoft.Json.Linq;
-using Microsoft.IdentityModel.Tokens;
-using DotNetNuke.Services.Tokens;
-using HttpContext = System.Web.HttpContext;
 using DotNetNuke.Services.Localization;
-using Newtonsoft.Json;
+using DotNetNuke.UI.Skins.Controls;
+using IdentityModel.Client;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using ProcsIT.Dnn.Authentication.OpenIdConnect.Components;
+using ProcsIT.Dnn.AuthServices.OpenIdConnect;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
-using IdentityModel.Client;
-using System.Linq;
-using ProcsIT.Dnn.Authentication.OpenIdConnect;
-using DotNetNuke.Common;
-using DotNetNuke.Common.Utilities;
-using DotNetNuke.UI.Skins.Controls;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Web.UI.WebControls;
+using HttpContext = System.Web.HttpContext;
 
 
 
@@ -180,7 +175,7 @@ namespace DNN.OpenId.Cognito
                 return null;
 
             var token = tokenHandler.ReadJwtToken(identityToken);
-            username = token.Claims.First(c => c.Type == "custom:DNNUsername").Value;
+            username = token.Claims.First(c => c.Type == "email").Value;
             return username;
         }
 
@@ -380,7 +375,7 @@ namespace DNN.OpenId.Cognito
                 btnLogin.Click += new EventHandler(LoginButton_Click);
                 btnSendResetLink.Click += new EventHandler(SendResetPassword_Click);
                 btnResetPassword.Click += new EventHandler(ResetPassword_Click);
-                lnkResetPassword.ServerClick += new EventHandler(LinkResetPassword_Click);
+                lnkResetPassword.ServerClick += (sender,ev) => LinkResetPassword_Click(sender, ev, "Please enter your email address and we will send an email with a code to Reset your password");
                 OAuthClient = new OidcClient(PortalId, Mode);
             }
 
@@ -422,6 +417,7 @@ namespace DNN.OpenId.Cognito
 
         protected override void OnLoad(EventArgs e)
         {
+            lblPasswordError = new Label();
             base.OnLoad(e);
 
 
@@ -612,24 +608,48 @@ namespace DNN.OpenId.Cognito
 
         private void ResetPassword_Click(object sender, EventArgs e)
         {
-            ResetPassword(txtEmail.Text);
-            divEmail.Visible = false;
-            divUsername.Visible = false;
-            divPassword.Visible = false;
-            divRememberMe.Visible = false;
-            divResetPassword.Visible = false;
-            btnLogin.Visible = false;
-            btnSendResetLink.Visible = false;
-            txtPasswordAux.Visible = false;
-            lblErrorMessage.Visible = false;
-            lblMessage.Text = "Your password has been reset.";
-            divNewPassword.Visible = false;
-            divEmailCode.Visible = false;
-            btnResetPassword.Visible = false;
-
+            if (ResetPassword(txtEmail.Text))
+            {
+                divEmail.Visible = false;
+                divUsername.Visible = false;
+                divPassword.Visible = false;
+                divRememberMe.Visible = false;
+                divResetPassword.Visible = false;
+                btnLogin.Visible = false;
+                btnSendResetLink.Visible = false;
+                txtPasswordAux.Visible = false;
+                lblErrorMessage.Visible = false;
+                lblMessage.Text = "Your password has been successfully reset. You will be redirected to the login page in 5 seconds.";
+                divNewPassword.Visible = false;
+                divEmailCode.Visible = false;
+                btnResetPassword.Visible = false;
+                string script = string.Format(@"          
+                setTimeout(function() {{
+                   window.location.href = '{0}';
+                    }}, 5000);
+                        ", config.RedirectURL);
+                System.Web.UI.ScriptManager.RegisterStartupScript(this.Page, this.GetType(), "RedirectToLogin", script, true);
+            }
+            else
+            {
+                divEmail.Visible = false;
+                divUsername.Visible = false;
+                divPassword.Visible = false;
+                divRememberMe.Visible = false;
+                divResetPassword.Visible = false;
+                btnLogin.Visible = false;
+                btnSendResetLink.Visible = false;
+                txtPasswordAux.Visible = false;
+                lblErrorMessage.Visible = true;
+                System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
+                lblMessage.Text = "An email was sent with a code to reset the Password. Please enter the code and your new password below to reset it.";
+                divNewPassword.Visible = true;
+                divEmailCode.Visible = true;
+                btnResetPassword.Visible = true;
+            }
         }
 
-        private void LinkResetPassword_Click(object sender, EventArgs e)
+        private void LinkResetPassword_Click(object sender, EventArgs e,string message)
         {
             divEmail.Visible = true;
             divUsername.Visible = false;
@@ -640,7 +660,7 @@ namespace DNN.OpenId.Cognito
             btnSendResetLink.Visible = true;
             txtPasswordAux.Visible = false;
             lblErrorMessage.Visible = false;
-            lblMessage.Text = "Please enter your email address and we will send an email with a code to Reset your password";
+            lblMessage.Text = message;
 
 
         }
@@ -714,43 +734,56 @@ namespace DNN.OpenId.Cognito
             providerClient.ForgotPassword(adminCreateUserPasswordResetRequest);
         }
 
-        public void ResetPassword(string username)
+        public Boolean ResetPassword(string username)
         {
-            string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
-            string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-            string cognitoUserPoolID = config.CognitoPoolID;
-
-            BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
-
-            AmazonCognitoIdentityProviderClient providerClient = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
-
-            var secretHash = CalculateSecretHash(username, config.ApiKey, config.ApiSecret);
-
-            // Create a ConfirmForgotPasswordRequest
-            var confirmForgotPasswordRequest = new ConfirmForgotPasswordRequest
+            try
             {
-                ClientId = config.ApiKey,
-                SecretHash = secretHash,
-                Username = username,
-                ConfirmationCode = txtEmailCode.Text, // The code received in the email
-                Password = txtNewPassword.Text,
-            };
+                string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
+                string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
+                string cognitoUserPoolID = config.CognitoPoolID;
 
-            // Confirm the forgot password request
-            var confirmForgotPasswordResponse = providerClient.ConfirmForgotPassword(confirmForgotPasswordRequest);
+                BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
 
-            if(confirmForgotPasswordResponse.HttpStatusCode == System.Net.HttpStatusCode.OK)
-            {
-                divEmail.Visible = true;
+                AmazonCognitoIdentityProviderClient providerClient = new AmazonCognitoIdentityProviderClient(credentials, Amazon.RegionEndpoint.USEast1);
+
+                var secretHash = CalculateSecretHash(username, config.ApiKey, config.ApiSecret);
+
+                // Create a ConfirmForgotPasswordRequest
+                var confirmForgotPasswordRequest = new ConfirmForgotPasswordRequest
+                {
+                    ClientId = config.ApiKey,
+                    SecretHash = secretHash,
+                    Username = username,
+                    ConfirmationCode = txtEmailCode.Text, // The code received in the email
+                    Password = txtNewPassword.Text,
+                };
+
+                // Confirm the forgot password request
+                var confirmForgotPasswordResponse = providerClient.ConfirmForgotPassword(confirmForgotPasswordRequest);
+
+                if (confirmForgotPasswordResponse.HttpStatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    divEmail.Visible = true;
+                    return true;
+                }
+                return false;
             }
 
-        }
+            catch (Exception ex)
+            {
+                divEmail.Visible = true;
+                lblErrorMessage.Text = ex.Message;
+                return false;
+            }
+            }
 
         [HttpPost]
         public void CustomLogin(string username, string password, string portalName)
         {
             string clientID = config.ApiKey;
             string clientSecret = config.ApiSecret;
+            string poolID=config.CognitoPoolID;
+            string redirectURL=config.RedirectURL;
 
             var credentials = new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey");
             var region = Amazon.RegionEndpoint.USEast1;
@@ -864,7 +897,16 @@ namespace DNN.OpenId.Cognito
                     divUsername.Visible = true;
                 }
             }
-            
+            catch (PasswordResetRequiredException)
+            {
+                LinkResetPassword_Click(lnkResetPassword, EventArgs.Empty, "Administrator requires you to change your password. Enter your email address, and we'll send a code to reset it.");
+                // If we decide to ForceChangePassword using Hosted UI we can use below code.
+                //string cognitoDomain = config.CognitoDomain;
+
+                //string passwordResetUrl = $"{cognitoDomain}/forgotPassword?response_type=code&client_id={HttpUtility.UrlEncode(clientID)}&redirect_uri={HttpUtility.UrlEncode(redirectURL)}&username={HttpUtility.UrlEncode(username)}";
+
+                //Response.Redirect($"{passwordResetUrl}");
+            }
             catch 
             {
                 //USER DID NOT AUTHENTICATE IN COGNITO
