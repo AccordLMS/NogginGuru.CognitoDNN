@@ -159,6 +159,60 @@ namespace DNN.OpenId.Cognito
         protected global::System.Web.UI.WebControls.TextBox txtRedirectURL;
 
         /// <summary>
+        /// lblLoginURL control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblLoginURL;
+
+        /// <summary>
+        /// txtLoginURL control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtLoginURL;
+
+        /// <summary>
+        /// lblUseHostedUI control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblUseHostedUI;
+
+        /// <summary>
+        /// chkHostedUI control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chkHostedUI;
+
+        /// <summary>
+        /// lblCognitoDomain control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblCognitoDomain;
+
+        /// <summary>
+        /// txtCognitoDomain control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtCognitoDomain;
+
+        /// <summary>
         /// lblLoginMessage control.
         /// </summary>
         /// <remarks>
@@ -175,5 +229,23 @@ namespace DNN.OpenId.Cognito
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtLoginMessage;
+
+        /// <summary>
+        /// lblHandleSSO control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblHandleSSO;
+
+        /// <summary>
+        /// chkHandleSSO control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chkHandleSSO;
     }
 }
