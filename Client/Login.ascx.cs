@@ -608,16 +608,16 @@ namespace DNN.OpenId.Cognito
 
         private void ResetPassword_Click(object sender, EventArgs e)
         {
+            divEmail.Visible = false;
+            divUsername.Visible = false;
+            divPassword.Visible = false;
+            divRememberMe.Visible = false;
+            divResetPassword.Visible = false;
+            btnLogin.Visible = false;
+            btnSendResetLink.Visible = false;
+            txtPasswordAux.Visible = false;
             if (ResetPassword(txtEmail.Text))
             {
-                divEmail.Visible = false;
-                divUsername.Visible = false;
-                divPassword.Visible = false;
-                divRememberMe.Visible = false;
-                divResetPassword.Visible = false;
-                btnLogin.Visible = false;
-                btnSendResetLink.Visible = false;
-                txtPasswordAux.Visible = false;
                 lblErrorMessage.Visible = false;
                 lblMessage.Text = "Your password has been successfully reset. You will be redirected to the login page in 5 seconds.";
                 divNewPassword.Visible = false;
@@ -632,14 +632,6 @@ namespace DNN.OpenId.Cognito
             }
             else
             {
-                divEmail.Visible = false;
-                divUsername.Visible = false;
-                divPassword.Visible = false;
-                divRememberMe.Visible = false;
-                divResetPassword.Visible = false;
-                btnLogin.Visible = false;
-                btnSendResetLink.Visible = false;
-                txtPasswordAux.Visible = false;
                 lblErrorMessage.Visible = true;
                 System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                 lblMessage.Text = "An email was sent with a code to reset the Password. Please enter the code and your new password below to reset it.";
@@ -763,7 +755,6 @@ namespace DNN.OpenId.Cognito
 
                 if (confirmForgotPasswordResponse.HttpStatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    divEmail.Visible = true;
                     return true;
                 }
                 return false;
@@ -771,7 +762,6 @@ namespace DNN.OpenId.Cognito
 
             catch (Exception ex)
             {
-                divEmail.Visible = true;
                 lblErrorMessage.Text = ex.Message;
                 return false;
             }
