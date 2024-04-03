@@ -417,7 +417,6 @@ namespace DNN.OpenId.Cognito
 
         protected override void OnLoad(EventArgs e)
         {
-            lblPasswordError = new Label();
             base.OnLoad(e);
 
 
