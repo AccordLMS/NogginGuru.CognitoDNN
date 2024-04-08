@@ -43,12 +43,13 @@ namespace DNN.OpenId.Cognito
         protected OidcClientBase OAuthClient { get; set; }
 
 
-        public new string RedirectURL { 
-            get 
-            { 
+        public new string RedirectURL
+        {
+            get
+            {
                 return _redirectURL;
-            } 
-            set {} 
+            }
+            set { }
         }
 
         //Query string parameters
@@ -63,21 +64,23 @@ namespace DNN.OpenId.Cognito
         private AmazonCognitoIdentityProviderClient _client;
         private string email = string.Empty;
         private string password = string.Empty;
-        
+
         private string AuthorizationEndpoint = string.Empty;
         private string TokenEndpoint = string.Empty;
 
         protected string AuthSystemApplicationName => "Oidc";
 
-        
+
         protected UserData GetCurrentUser() => OAuthClient.GetCurrentUser<OidcUserData>();
 
 
-        public override bool Enabled {  
-            get {
+        public override bool Enabled
+        {
+            get
+            {
                 if (config == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
                 return config.Enabled;
-            } 
+            }
         }
 
 
@@ -141,7 +144,7 @@ namespace DNN.OpenId.Cognito
             {
                 username = GetDNNUserName(objTokenResponse.IdentityToken);
             }
-            else 
+            else
             {
                 username = GetUserName(objTokenResponse.IdentityToken);
             }
@@ -151,15 +154,27 @@ namespace DNN.OpenId.Cognito
             else
             {
                 //user exits and was validated in cognito, so, login to DNN
+                var accessToken = objTokenResponse.AccessToken;
+
+                if (accessToken != null && accessToken != "")
+                {
+                    SetCookie("cognitoAccessToken", accessToken, 120);
+                }
+
+                var refreshToken = objTokenResponse.RefreshToken;
+
+                if (refreshToken != null && refreshToken != "")
+                {
+                    SetCookie("cognitoRefreshToken", refreshToken, 120);
+                }
+
                 PortalController pController = new PortalController();
                 string portalName = pController.GetPortal(PortalId).PortalName;
-
-
-                LoginUser(portalName,username);
+                LoginUser(portalName, username);
 
                 return AuthorisationResult.Authorized;
             }
-            
+
         }
 
         /// <summary>
@@ -201,11 +216,11 @@ namespace DNN.OpenId.Cognito
                 }
                 catch (Exception ex)
                 {
-                    
+
                     userEmail = ConstructSyntheticEmail(identityToken);
                 }
 
-                
+
                 if (!EmailExistsAsUsername(PortalSettings, userEmail))
                 {
                     UserController userController = new UserController();
@@ -263,7 +278,7 @@ namespace DNN.OpenId.Cognito
             var userId = token.Claims.First(c => c.Type == "sub")?.Value;
             var domain = identitiesClaimJson["providerName"]?.ToString().ToLower();
 
-            syntheticEmail =  $"{userId}@{domain}.com";
+            syntheticEmail = $"{userId}@{domain}.com";
             return syntheticEmail;
         }
 
@@ -274,7 +289,7 @@ namespace DNN.OpenId.Cognito
         /// <param name="uri">URI</param>
         /// <param name="parameters">parameters (will be included in url for get, or body for post)</param>
         /// <returns>the full response</returns>
-        private string ExecuteWebRequest(HttpMethod method, Uri uri, string parameters )
+        private string ExecuteWebRequest(HttpMethod method, Uri uri, string parameters)
         {
             WebRequest request;
 
@@ -352,8 +367,8 @@ namespace DNN.OpenId.Cognito
 
         protected override void OnInit(EventArgs e)
         {
-            if (config  == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
-            
+            if (config == null) config = DNNOpenIDCognitoConfig.GetConfig(PortalId);
+
             AuthorizationEndpoint = config.CognitoDomain + "/oauth2/authorize";
             TokenEndpoint = config.CognitoDomain + "/oauth2/token";
             _redirectURL = config.RedirectURL;
@@ -365,17 +380,17 @@ namespace DNN.OpenId.Cognito
             {
                 Authorize();
             }
-            else if (config.Enabled && config.UseHostedUI && UserController.Instance.GetCurrentUserInfo() != null) 
+            else if (config.Enabled && config.UseHostedUI && UserController.Instance.GetCurrentUserInfo() != null)
             {
                 GetCode();
             }
-            else 
+            else
             {
                 base.OnInit(e);
                 btnLogin.Click += new EventHandler(LoginButton_Click);
                 btnSendResetLink.Click += new EventHandler(SendResetPassword_Click);
                 btnResetPassword.Click += new EventHandler(ResetPassword_Click);
-                lnkResetPassword.ServerClick += (sender,ev) => LinkResetPassword_Click(sender, ev, "Please enter your email address and we will send an email with a code to Reset your password");
+                lnkResetPassword.ServerClick += (sender, ev) => LinkResetPassword_Click(sender, ev, "Please enter your email address and we will send an email with a code to Reset your password");
                 OAuthClient = new OidcClient(PortalId, Mode);
             }
 
@@ -388,7 +403,7 @@ namespace DNN.OpenId.Cognito
         {
             if (!string.IsNullOrEmpty(_DNNVerificationCode) && this.PortalSettings.UserRegistration == (int)Globals.PortalRegistrationType.VerifiedRegistration)
             {
-                
+
                 try
                 {
                     UserController.VerifyUser(_DNNVerificationCode.Replace(".", "+").Replace("-", "/").Replace("_", "="));
@@ -433,11 +448,11 @@ namespace DNN.OpenId.Cognito
                 if (!IsPostBack)
                 {
                     txtPassword.Attributes["type"] = "password";
-                    txtNewPassword.Attributes["type"] = "password"; 
+                    txtNewPassword.Attributes["type"] = "password";
                 }
             }
-            
-            
+
+
         }
 
         private void LoginButton_Click(object sender, EventArgs e)
@@ -466,13 +481,13 @@ namespace DNN.OpenId.Cognito
                 System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
                 return;
             }
- 
 
-            if(password == string.Empty)
+
+            if (password == string.Empty)
             {
                 if (txtPassword.Text == string.Empty || txtPassword.Text.Trim() == "")
                 {
-                    if(txtPasswordAux.Text == string.Empty || txtPasswordAux.Text.Trim() == "")
+                    if (txtPasswordAux.Text == string.Empty || txtPasswordAux.Text.Trim() == "")
                     {
                         lblErrorMessage.Visible = true;
                         lblErrorMessage.Text = "You need to enter a Password.";
@@ -484,21 +499,21 @@ namespace DNN.OpenId.Cognito
                         txtPassword.Text = txtPasswordAux.Text;
                         password = txtPassword.Text;
                     }
-                                        
+
                 }
                 else
                 {
                     password = txtPassword.Text;
-                }               
+                }
             }
 
 
             txtPoolID.Value = config.CognitoPoolID;
             txtClientID.Value = config.ApiKey;
-            
+
             PortalController pController = new PortalController();
             string portalName = pController.GetPortal(PortalId).PortalName;
-            
+
             if (!ExistsCognitoUser(txtEmail.Text))
             {
                 var loginStatus = UserLoginStatus.LOGIN_FAILURE;
@@ -533,9 +548,9 @@ namespace DNN.OpenId.Cognito
                         lblErrorMessage.Visible = true;
                         lblErrorMessage.Text = "Login failed. Username or password are incorrect.";
                         System.Web.UI.ScriptManager.RegisterStartupScript(this, this.GetType(), "HideErrorLabel", "setTimeout(hideErrorLabel, 5000);", true);
-                        divEmail.Visible=true;
-                        divPassword.Visible=true;   
-                        divUsername.Visible=true;
+                        divEmail.Visible = true;
+                        divPassword.Visible = true;
+                        divUsername.Visible = true;
                         lblMessage.Visible = true;
                         lblMessage.Text = "Please enter your email, username and password";
                         return;
@@ -581,7 +596,7 @@ namespace DNN.OpenId.Cognito
             }
             else
             {
-                this.CustomLogin(txtEmail.Text, txtPassword.Text, portalName);      
+                this.CustomLogin(txtEmail.Text, txtPassword.Text, portalName);
             }
 
         }
@@ -640,7 +655,7 @@ namespace DNN.OpenId.Cognito
             }
         }
 
-        private void LinkResetPassword_Click(object sender, EventArgs e,string message)
+        private void LinkResetPassword_Click(object sender, EventArgs e, string message)
         {
             divEmail.Visible = true;
             divUsername.Visible = false;
@@ -707,7 +722,7 @@ namespace DNN.OpenId.Cognito
         {
             string cognitoIAMUserAccessKey = config.IAMUserAccessKey;
             string cognitoIAMUserSecretKey = config.IAMUserSecretKey;
-            
+
 
             BasicAWSCredentials credentials = new Amazon.Runtime.BasicAWSCredentials(cognitoIAMUserAccessKey, cognitoIAMUserSecretKey);
 
@@ -764,15 +779,15 @@ namespace DNN.OpenId.Cognito
                 lblErrorMessage.Text = ex.Message;
                 return false;
             }
-            }
+        }
 
         [HttpPost]
         public void CustomLogin(string username, string password, string portalName)
         {
             string clientID = config.ApiKey;
             string clientSecret = config.ApiSecret;
-            string poolID=config.CognitoPoolID;
-            string redirectURL=config.RedirectURL;
+            string poolID = config.CognitoPoolID;
+            string redirectURL = config.RedirectURL;
 
             var credentials = new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey");
             var region = Amazon.RegionEndpoint.USEast1;
@@ -796,9 +811,9 @@ namespace DNN.OpenId.Cognito
                  {
                     {"scope", "openid"}, // Include the "openid" scope here
                  }
-            };
+                };
 
-                
+
 
                 var response = _client.InitiateAuth(request);
 
@@ -809,17 +824,17 @@ namespace DNN.OpenId.Cognito
                     var accessToken = response.AuthenticationResult.AccessToken;
                     if (accessToken != null && accessToken != "")
                     {
-                        //SetCookie("cognitoAccessToken", accessToken, 120);
+                        SetCookie("cognitoAccessToken", accessToken, 120);
                     }
 
                     var refreshToken = response.AuthenticationResult.RefreshToken;
-                    if(refreshToken != null && refreshToken != "")
+                    if (refreshToken != null && refreshToken != "")
                     {
-                        //SetCookie("cognitoRefreshToken", refreshToken, 120);
+                        SetCookie("cognitoRefreshToken", refreshToken, 120);
                     }
 
                     var idToken = response.AuthenticationResult.IdToken;
-                    
+
                     var handler = new JwtSecurityTokenHandler();
                     var token = handler.ReadJwtToken(accessToken);
 
@@ -896,7 +911,7 @@ namespace DNN.OpenId.Cognito
 
                 //Response.Redirect($"{passwordResetUrl}");
             }
-            catch 
+            catch
             {
                 //USER DID NOT AUTHENTICATE IN COGNITO
                 PresentError();
@@ -912,7 +927,7 @@ namespace DNN.OpenId.Cognito
         private void LoginUser(string portalName, string userName)
         {
             UserInfo objUserInfo = UserController.GetUserByName(userName);
-                       
+
             AuthenticationController.SetAuthenticationType(AuthSystemApplicationName);
             UserController.UserLogin(PortalId, objUserInfo, portalName, AuthSystemApplicationName, false);
             Response.Redirect(config.RedirectURL);
@@ -954,15 +969,15 @@ namespace DNN.OpenId.Cognito
 
         public void SetCookie(string key, string value, int expirationMinutes)
         {
-            if(ExistsCookie(key))
+            if (ExistsCookie(key))
             {
-                Response.Cookies.Remove(key);                
+                Response.Cookies.Remove(key);
             }
-           
+
             HttpCookie cookie = new HttpCookie(key, value);
             cookie.Expires = DateTime.UtcNow.AddMinutes(expirationMinutes);
 
-            Response.Cookies.Add(cookie);           
+            Response.Cookies.Add(cookie);
         }
 
         public bool ExistsCookie(string cookieName)
