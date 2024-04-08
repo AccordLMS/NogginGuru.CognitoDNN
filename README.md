@@ -1,3 +1,4 @@
+
 ProcsIT.Dnn.OpenIdConnect
 OpenIdConnect provider and plugin for DNN (DotNetNuke).
 
@@ -37,3 +38,4 @@ This version contains package NogginGuru.CognitoDNN.03.00.00_Install which conta
 Reset Password UI is configured to handle the case where User status is set to Force Change Password and all kind of exceptions that come with it and also handles the redirection to login page after user succesfully resets his password.
 
 RoadTripNation: At the time of login refresh token is set in cookies so that it can be utilized at Cognito.Connector package, This change will allow the user to login directly to RoadTripNation after clicking the button.
+
